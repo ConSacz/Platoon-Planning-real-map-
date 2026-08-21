@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mạng lưới đầu kéo container – Châu Âu</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  :root{
+    --ink:#0b1220; --panel:#0f1729; --panel2:#16203a; --line:#243252;
+    --txt:#e7edf7; --muted:#93a2be;
+    --spine:#e8590c; --west:#0c8599; --scan:#3b5bdb; --east:#9c36b5; --med:#f06595;
+    --red:#e03131; --deep:#c2255c; --hub:#f08c00; --alp:#fab005; --chan:#12b886;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:var(--sans);background:var(--ink);color:var(--txt)}
+  #map{position:absolute;inset:0;z-index:1;background:#aad3df}
+  .leaflet-container{font-family:var(--sans)}
+
+  #console{
+    position:absolute;z-index:1000;top:14px;left:14px;width:326px;max-width:calc(100vw - 28px);
+    max-height:calc(100vh - 28px);overflow:auto;background:rgba(15,23,41,.94);
+    border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px);
+    box-shadow:0 18px 50px rgba(0,0,0,.45);
+  }
+  #console header{padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+  .kicker{font:600 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--spine)}
+  h1{margin:8px 0 2px;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .sub{font-size:12px;color:var(--muted);line-height:1.45}
+  .body{padding:12px 16px 16px}
+  .grp{margin:0 0 13px}
+  .grp h2{font:700 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+
+  .row{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:9px;cursor:pointer;user-select:none}
+  .row:hover{background:var(--panel2)}
+  .row input{display:none}
+  .swatch{width:26px;height:4px;border-radius:2px;flex:none}
+  .dot{width:13px;height:13px;border-radius:50%;flex:none;border:2px solid #ffffff33}
+  .diamond{width:12px;height:12px;transform:rotate(45deg);flex:none;border:2px solid #ffffff44}
+  .sq{width:12px;height:12px;border-radius:2px;flex:none;border:2px solid #ffffff44}
+  .rlabel{font-size:12.5px;line-height:1.22}
+  .rlabel small{display:block;color:var(--muted);font-size:10.5px;margin-top:1px}
+  .row.off .rlabel,.row.off .swatch,.row.off .dot,.row.off .diamond,.row.off .sq{opacity:.32}
+
+  .legend-note{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px dashed var(--line);padding-top:10px}
+  .legend-note b{color:var(--txt);font-weight:700}
+  .foot{font:500 10px/1.4 var(--mono);color:#5f6f8c;padding:0 16px 14px}
+
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:12px}
+  .leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+  .leaflet-popup-content{margin:12px 14px;font-size:12.5px;line-height:1.5}
+  .pop-t{font-weight:800;font-size:14px;margin-bottom:1px}
+  .pop-tag{font:600 9px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:3px 6px;border-radius:5px;display:inline-block;margin-bottom:8px}
+  .pop-role{color:var(--muted);margin-bottom:8px}
+  .pop-tt{background:var(--panel2);border-left:3px solid var(--spine);padding:7px 9px;border-radius:0 7px 7px 0;font-size:11.5px}
+  .pop-tt b{color:#ffd8a8}
+  .sea-label{background:#0f1729;color:#a5d8ff;border:1px solid #1c7ed6;border-radius:6px;
+    font:600 10px/1 var(--mono);padding:4px 7px;box-shadow:0 2px 8px #0006;white-space:nowrap}
+
+  @media (prefers-reduced-motion:no-preference){
+    .flow{stroke-dasharray:2 16;animation:convoy 1.1s linear infinite}
+    @keyframes convoy{to{stroke-dashoffset:-18}}
+  }
+  .toggle-btn{display:none}
+  @media(max-width:560px){
+    #console{width:auto;right:14px}
+    .toggle-btn{display:inline-block;margin-top:8px;background:var(--panel2);border:1px solid var(--line);
+      color:var(--txt);font:600 11px var(--mono);padding:6px 10px;border-radius:8px;cursor:pointer}
+    #console.min .body,#console.min .foot{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<aside id="console">
+  <header>
+    <div class="kicker">Fleet Network · Đầu kéo container · EU</div>
+    <h1>Mạng lưới vận tải đầu kéo — Châu Âu</h1>
+    <div class="sub">Xây trên khung hành lang TEN-T (Quy định EU 2024/1679), nối các mega-cảng, hub nội địa, nút thắt qua Alps và eo biển Manche. Nền OpenStreetMap.</div>
+    <button class="toggle-btn" onclick="document.getElementById('console').classList.toggle('min')">Ẩn / hiện bảng ▾</button>
+  </header>
+  <div class="body">
+    <div class="grp">
+      <h2>Hành lang vận tải</h2>
+      <label class="row" data-layer="spine"><input type="checkbox" checked><span class="swatch" style="background:var(--spine)"></span><span class="rlabel">Rhine–Alpine (trục bận nhất EU)<small>Rotterdam ⇢ Ruhr ⇢ Basel ⇢ Milan · convoy</small></span></label>
+      <label class="row" data-layer="west"><input type="checkbox" checked><span class="swatch" style="background:var(--west)"></span><span class="rlabel">Atlantic & Manche<small>London ⇢ Calais ⇢ Paris ⇢ Lyon ⇢ Marseille</small></span></label>
+      <label class="row" data-layer="scan"><input type="checkbox" checked><span class="swatch" style="background:var(--scan)"></span><span class="rlabel">Scandinavian–Mediterranean<small>Malmö ⇢ Hamburg ⇢ Brenner ⇢ Rome</small></span></label>
+      <label class="row" data-layer="east"><input type="checkbox" checked><span class="swatch" style="background:var(--east)"></span><span class="rlabel">Baltic & Đông Âu<small>Gdańsk · Warsaw ⇢ Wien ⇢ Trieste</small></span></label>
+      <label class="row" data-layer="med"><input type="checkbox" checked><span class="swatch" style="background:var(--med)"></span><span class="rlabel">Mediterranean<small>Algeciras ⇢ Barcelona ⇢ Genoa</small></span></label>
+    </div>
+    <div class="grp">
+      <h2>Điểm nút</h2>
+      <label class="row" data-legend><span class="dot" style="background:var(--deep)"></span><span class="rlabel">Mega-cảng cửa ngõ<small>Rotterdam · Antwerp · Hamburg</small></span></label>
+      <label class="row" data-legend><span class="dot" style="background:var(--red)"></span><span class="rlabel">Cảng biển</span></label>
+      <label class="row" data-legend><span class="dot" style="background:var(--hub)"></span><span class="rlabel">Hub / cảng nội địa</span></label>
+      <label class="row" data-legend><span class="diamond" style="background:var(--alp)"></span><span class="rlabel">Nút thắt qua dãy Alps</span></label>
+      <label class="row" data-legend><span class="sq" style="background:var(--chan)"></span><span class="rlabel">Điểm vượt eo biển Manche</span></label>
+      <label class="row" data-legend><span class="swatch" style="height:3px;background:repeating-linear-gradient(90deg,#1c7ed6 0 2px,transparent 2px 9px)"></span><span class="rlabel">Chặng vượt biển (phà / hầm)<small>Dover ⇄ Calais · Rødby ⇄ Puttgarden</small></span></label>
+    </div>
+    <div class="legend-note">
+      <b>Nhịp vận hành:</b> phần lớn các nước cấm xe &gt;7,5t Chủ nhật & ngày lễ (Đức 00–22h; Thụy Sĩ cả ngày CN + cấm đêm, ngưỡng 3,5t). Giờ lái EU: 4,5h → nghỉ 45′, tối đa 9h/ngày. Hàng liên vận trong bán kính cảng/ga được <b>miễn</b> lệnh cấm cuối tuần — lý do các hub intermodal nằm sát cảng.
+    </div>
+  </div>
+  <div class="foot">Nền: © OpenStreetMap · Khung: TEN-T 2024/1679<br>Hành lang vẽ theo tuyến motorway thật (A/E) ở mức sơ đồ — không phải dữ liệu định tuyến từng mét.</div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const map = L.map('map',{zoomControl:true,attributionControl:true}).setView([48,9],4.6);
+L.control.attribution({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:18, attribution:'© OpenStreetMap contributors'
+}).addTo(map);
+
+const CO={spine:'#e8590c',west:'#0c8599',scan:'#3b5bdb',east:'#9c36b5',med:'#f06595',
+  red:'#e03131',deep:'#c2255c',hub:'#f08c00',alp:'#fab005',chan:'#12b886'};
+
+/* panes: corridors below, nodes above — so markers stay clickable at junctions */
+map.createPane('linesPane');  map.getPane('linesPane').style.zIndex = 420;
+map.createPane('nodesPane');  map.getPane('nodesPane').style.zIndex = 640;
+
+/* ---------- NODES ---------- */
+const nodes=[
+ // mega gateways
+ {id:'rotterdam',name:'Cảng Rotterdam',sub:'Hà Lan',t:'mega',lat:51.95,lng:4.13,
+   role:'Cảng lớn nhất châu Âu — khởi điểm hành lang Rhine–Alpine, đầu mối container & hóa dầu.',
+   tt:'Hàng liên vận trong ~150 km cảng được miễn lệnh cấm Chủ nhật của Đức → có thể chạy tiếp cuối tuần.'},
+ {id:'antwerp',name:'Antwerp – Bruges',sub:'Bỉ',t:'mega',lat:51.26,lng:4.40,
+   role:'Cảng số 2 EU, trung tâm hóa chất lớn nhất châu lục.',
+   tt:'Bỉ không có lệnh cấm cuối tuần toàn quốc → nút trung chuyển linh hoạt nhất khu vực.'},
+ {id:'hamburg',name:'Cảng Hamburg',sub:'Đức',t:'mega',lat:53.55,lng:9.99,
+   role:'Cửa ngõ Bắc Âu phục vụ Trung & Đông Âu, đầu Bắc của trục ScanMed.',
+   tt:'Đức cấm xe >7,5t Chủ nhật & lễ 00:00–22:00; thêm cấm thứ Bảy hè (7–8) trên Autobahn A1/A7…'},
+ // seaports
+ {id:'lehavre',name:'Le Havre',sub:'Pháp',t:'port',lat:49.49,lng:0.11,
+   role:'Cửa ngõ Đại Tây Dương của Pháp, nối trục sông Seine lên Paris.',
+   tt:'Pháp cấm xe >7,5t Chủ nhật 00–22h; kiểm soát gắt quanh Paris và tuyến Alps mùa hè.'},
+ {id:'genoa',name:'Genoa',sub:'Ý',t:'port',lat:44.40,lng:8.93,
+   role:'Cửa ngõ Địa Trung Hải, điểm cuối phía Nam của Rhine–Alpine.',
+   tt:'Ý cấm xe >7,5t Chủ nhật 07–22h (mùa hè bắt đầu sớm hơn).'},
+ {id:'valencia',name:'Valencia',sub:'Tây Ban Nha',t:'port',lat:39.44,lng:-0.32,
+   role:'Cảng container lớn nhất Tây Địa Trung Hải.',ttoff:true,
+   tt:'Trên hành lang Mediterranean; Tây Ban Nha chủ yếu cấm theo tuyến/ mùa & hàng nguy hiểm.'},
+ {id:'algeciras',name:'Algeciras',sub:'Tây Ban Nha',t:'port',lat:36.13,lng:-5.44,
+   role:'Cửa ngõ eo Gibraltar — cảng trung chuyển & ro-ro sang Bắc Phi.',
+   tt:'Điểm cực Nam của trục Mediterranean, gom hàng lên Madrid–Barcelona.'},
+ {id:'barcelona',name:'Barcelona',sub:'Tây Ban Nha',t:'port',lat:41.35,lng:2.16,
+   role:'Cảng & trung tâm phân phối Đông Bắc Iberia.',tt:'Nút giao trục Mediterranean với hướng Pháp.'},
+ {id:'marseille',name:'Marseille – Fos',sub:'Pháp',t:'port',lat:43.34,lng:5.05,
+   role:'Cửa ngõ Nam Pháp, điểm cuối trục Đại Tây Dương/Rhône.',tt:'Nối Lyon–Paris theo thung lũng Rhône.'},
+ {id:'gdansk',name:'Gdańsk',sub:'Ba Lan',t:'port',lat:54.35,lng:18.65,
+   role:'Cửa ngõ Baltic (Baltic Hub) cho Ba Lan & Trung Âu.',
+   tt:'Ba Lan cấm xe >12t Chủ nhật 08–22h (và cao điểm hè). Đầu Bắc trục Baltic–Adriatic.'},
+ {id:'trieste',name:'Trieste',sub:'Ý',t:'port',lat:45.65,lng:13.77,
+   role:'Cửa ngõ Adriatic — đường ngắn nhất cho hàng Á–Âu vào Trung Âu.',
+   tt:'Điểm cuối phía Nam của trục Baltic–Adriatic; nối Wien qua Villach.'},
+ {id:'verona',name:'Verona',sub:'Ý',t:'hub',lat:45.44,lng:10.99,
+   role:'Quadrante Europa — một trong những trung tâm intermodal lớn nhất Nam Âu.',
+   tt:'Điểm tập kết ngay sau khi xuống đèo Brenner; chuyển tải bộ↔sắt để đi tiếp lên Bắc Âu.'},
+ {id:'roma',name:'Roma',sub:'Ý',t:'hub',lat:41.90,lng:12.50,
+   role:'Trung tâm tiêu thụ & phân phối miền Trung Ý, trên trục ScanMed.',
+   tt:'Ý cấm xe >7,5t Chủ nhật 07–22h; vành đai GRA hạn chế xe nặng giờ cao điểm.'},
+ {id:'napoli',name:'Napoli',sub:'Ý',t:'port',lat:40.85,lng:14.27,
+   role:'Cảng & trung tâm phân phối miền Nam Ý, điểm cuối trục ScanMed trên đất liền.',
+   tt:'Nối phà đi Sicily; hạ tầng đường bộ phía Nam kém hơn miền Bắc.'},
+ {id:'gioiatauro',name:'Gioia Tauro',sub:'Calabria, Ý',t:'port',lat:38.45,lng:15.90,
+   role:'Cảng trung chuyển container lớn nhất Ý, nằm giữa tuyến Suez – Gibraltar.',
+   tt:'Chủ yếu trung chuyển tàu–tàu; hàng đi bộ phải chạy A2 lên Napoli, chặng dài và chậm.'},
+ {id:'piraeus',name:'Piraeus',sub:'Hy Lạp',t:'port',lat:37.94,lng:23.64,
+   role:'Cửa ngõ hàng từ châu Á qua kênh Suez (hub của COSCO).',
+   tt:'Đầu vào hành lang Western Balkans – Đông Địa Trung Hải, đi lên Trung Âu.'},
+ // inland hubs
+ {id:'duisburg',name:'Duisburg',sub:'Đức · Ruhr',t:'hub',lat:51.43,lng:6.76,
+   role:'Cảng nội địa lớn nhất thế giới, trái tim vùng Ruhr, ga cuối tuyến đường sắt Trung Quốc–EU.',
+   tt:'Trung tâm chuyển tải đường bộ–sông–sắt; đặt hàng liên vận để lách lệnh cấm cuối tuần.'},
+ {id:'venlo',name:'Venlo',sub:'Hà Lan',t:'hub',lat:51.37,lng:6.17,
+   role:'Điểm nóng logistics, kho phân phối cho toàn EU sát biên giới Đức.',tt:'Hàng hóa gom từ Rotterdam/Antwerp trước khi tỏa đi.'},
+ {id:'paris',name:'Paris',sub:'Pháp',t:'hub',lat:48.86,lng:2.35,
+   role:'Trung tâm tiêu thụ lớn, giao điểm Bắc–Tây–Nam nước Pháp.',tt:'Xe tải nặng bị hạn chế trong vành đai đô thị; ưu tiên đi tuyến vòng.'},
+ {id:'lyon',name:'Lyon',sub:'Pháp',t:'hub',lat:45.76,lng:4.83,
+   role:'Ngã ba Bắc–Nam, cửa vào tuyến Alps phía Tây (Fréjus/Mont Blanc).',tt:'Nút phân luồng sang Ý và xuống Marseille.'},
+ {id:'frankfurt',name:'Frankfurt',sub:'Đức',t:'hub',lat:50.11,lng:8.68,
+   role:'Trung tâm Rhine-Main, giao điểm Bắc–Nam & Đông–Tây nước Đức.',tt:'Trên trục Rhine–Alpine; mạng Autobahn dày.'},
+ {id:'munich',name:'München',sub:'Đức',t:'hub',lat:48.14,lng:11.58,
+   role:'Cửa ngõ lên dãy Alps và Brenner.',tt:'Điểm tập kết trước khi vượt Brenner — hay kẹt do Áo điều tiết nhỏ giọt.'},
+ {id:'milan',name:'Milan',sub:'Ý',t:'hub',lat:45.46,lng:9.19,
+   role:'Trung tâm công nghiệp & logistics Bắc Ý.',tt:'Giao của Rhine–Alpine, ScanMed và Mediterranean.'},
+ {id:'basel',name:'Basel',sub:'Thụy Sĩ',t:'hub',lat:47.56,lng:7.59,
+   role:'Bản lề sông Rhine – dãy Alps, cửa vào Thụy Sĩ.',
+   tt:'Thụy Sĩ: giới hạn 40t, phí LSVA theo km–tải–khí thải, cấm CN cả ngày + cấm đêm 22–05h.'},
+ {id:'vienna',name:'Wien',sub:'Áo',t:'hub',lat:48.21,lng:16.37,
+   role:'Ngã tư Trung Âu, giao Baltic–Adriatic và Danube.',tt:'Áo cấm xe >3,5t Chủ nhật 00–22h; cấm đêm nhiều tuyến.'},
+ {id:'prague',name:'Praha',sub:'Séc',t:'hub',lat:50.08,lng:14.44,
+   role:'Nút Trung Âu nối Đức–Ba Lan–Áo.',tt:'Séc cấm xe >7,5t Chủ nhật 13–22h (và cao điểm hè).'},
+ {id:'warsaw',name:'Warszawa',sub:'Ba Lan',t:'hub',lat:52.23,lng:21.01,
+   role:'Trung tâm phân phối lớn nhất Đông–Trung Âu, cửa hướng Ukraine.',tt:'Giao trục North Sea–Baltic và Baltic–Adriatic.'},
+ {id:'madrid',name:'Madrid',sub:'Tây Ban Nha',t:'hub',lat:40.42,lng:-3.70,
+   role:'Trung tâm phân phối bán đảo Iberia.',tt:'Nút giữa của trục Mediterranean/Atlantic Iberia.'},
+ {id:'berlin',name:'Berlin',sub:'Đức',t:'hub',lat:52.52,lng:13.40,
+   role:'Cửa ngõ hướng Đông (Ba Lan) trên trục North Sea–Baltic.',tt:'Áp lệnh cấm CN/lễ của Đức.'},
+ {id:'brussels',name:'Brussels',sub:'Bỉ',t:'hub',lat:50.85,lng:4.35,
+   role:'Giao điểm Manche–Rhine, trung tâm hành chính EU.',tt:'Bỉ linh hoạt cuối tuần; nối Calais với vùng Ruhr.'},
+ {id:'budapest',name:'Budapest',sub:'Hungary',t:'hub',lat:47.50,lng:19.04,
+   role:'Cửa ngõ Đông–Nam, nối Balkan & Danube.',tt:'Hungary cấm xe >7,5t Chủ nhật 00–22h.'},
+ // alpine crossings
+ {id:'brenner',name:'Đèo Brenner (A13)',sub:'Áo ↔ Ý',t:'alpine',lat:47.00,lng:11.51,
+   role:'Tuyến vượt Alps bận rộn nhất — hàng triệu lượt xe tải/năm.',
+   tt:'Áo áp "lệnh cấm theo ngành" trên A12 Inntal, cấm chạy đêm, và điều tiết nhỏ giọt (Blockabfertigung) tại Kufstein → tắc kéo dài. Cần lịch chạy tránh khung siết.'},
+ {id:'gotthard',name:'Gotthard',sub:'Thụy Sĩ',t:'alpine',lat:46.56,lng:8.57,
+   role:'Tuyến Alps trung tâm, thay thế Brenner qua ngả Thụy Sĩ.',
+   tt:'Thụy Sĩ cấm CN cả ngày + cấm đêm, phí LSVA cao, giới hạn 40t → chỉ tối ưu khi hàng đi Basel–Milan.'},
+ {id:'frejus',name:'Mont Blanc / Fréjus',sub:'Pháp ↔ Ý',t:'alpine',lat:45.13,lng:6.70,
+   role:'Cửa Alps phía Tây, nối Lyon với Torino.',
+   tt:'Hầm dài, phí cao, hạn chế theo chiều & bảo trì luân phiên; là lối vòng khi Brenner quá tải.'},
+ // channel
+ {id:'calais',name:'Calais / Eurotunnel',sub:'Pháp',t:'chan',lat:50.95,lng:1.86,
+   role:'Cửa ngõ sang Anh — phà Dover và tàu hỏa xuyên hầm Eurotunnel.',
+   tt:'Sau Brexit phải khai hải quan (GVMS/ENS); kiểm soát "juxtaposed" hai đầu → dựng thời gian đệm cho biên giới.'},
+ {id:'dover',name:'Dover',sub:'Anh',t:'chan',lat:51.13,lng:1.31,
+   role:'Đầu cầu vào nước Anh cho hàng lục địa.',tt:'Ùn ứ theo mùa; cần đặt chỗ phà/tàu trước.'},
+ {id:'london',name:'London',sub:'Anh',t:'hub',lat:51.51,lng:-0.13,
+   role:'Trung tâm tiêu thụ lớn nhất nước Anh.',
+   tt:'London Lorry Control Scheme hạn chế xe nặng ban đêm & cuối tuần trong nội đô.'},
+ // nordic link
+ {id:'copenhagen',name:'København',sub:'Đan Mạch',t:'hub',lat:55.68,lng:12.57,
+   role:'Cửa ngõ Bắc Âu, nối Thụy Điển qua cầu Øresund.',tt:'Tuyến Hamburg–Copenhagen sẽ rút ngắn khi hầm Fehmarn hoàn thành.'},
+ {id:'malmo',name:'Malmö',sub:'Thụy Điển',t:'hub',lat:55.60,lng:13.00,
+   role:'Cổng vào Scandinavia (Thụy Điển, Na Uy, Phần Lan).',
+   tt:'Bắc Âu cho phép tổ hợp dài EMS tới 25,25 m / 64 t → năng suất mỗi chuyến cao hơn phần còn lại của EU.'},
+];
+
+const styleByType={
+ mega:{fill:CO.deep,r:9}, port:{fill:CO.red,r:7}, hub:{fill:CO.hub,r:7}
+};
+function tagInfo(t){
+ return t==='mega'?['Mega-cảng',CO.deep] : t==='port'?['Cảng biển',CO.red] :
+        t==='hub'?['Hub nội địa',CO.hub] : t==='alpine'?['Nút Alps',CO.alp] : ['Vượt Manche',CO.chan];
+}
+const nodeLayer=L.layerGroup().addTo(map);
+function popup(n){
+ const [txt,col]=tagInfo(n.t);
+ return `<div class="pop-t">${n.name}</div>
+   <span class="pop-tag" style="background:${col}22;color:${col};border:1px solid ${col}55">${txt} · ${n.sub}</span>
+   <div class="pop-role">${n.role}</div>
+   <div class="pop-tt"><b>Đầu kéo:</b> ${n.tt}</div>`;
+}
+nodes.forEach(n=>{
+ let m;
+ if(n.t==='alpine'){
+   m=L.marker([n.lat,n.lng],{icon:L.divIcon({className:'',iconSize:[16,16],
+     html:`<div style="width:13px;height:13px;background:${CO.alp};border:2px solid #fff;transform:rotate(45deg);box-shadow:0 1px 4px #0007"></div>`})});
+ }else if(n.t==='chan'){
+   m=L.marker([n.lat,n.lng],{icon:L.divIcon({className:'',iconSize:[15,15],
+     html:`<div style="width:12px;height:12px;background:${CO.chan};border:2px solid #fff;border-radius:2px;box-shadow:0 1px 4px #0007"></div>`})});
+ }else{
+   const s=styleByType[n.t];
+   m=L.circleMarker([n.lat,n.lng],{pane:'nodesPane',radius:s.r,color:'#fff',weight:n.t==='mega'?3:2,fillColor:s.fill,fillOpacity:1});
+ }
+ m.bindPopup(popup(n),{maxWidth:290});
+ m.bindTooltip(n.name,{direction:'right',offset:[10,0],opacity:.9});
+ m.addTo(nodeLayer);
+});
+
+/* ---------- CORRIDORS ---------- */
+const corridors=[
+ /* ============ A – RHINE–ALPINE (spine) : A15/A3/A5/A2/A7 ============ */
+ // Rotterdam–Duisburg (A15 → A3, qua Nijmegen/Emmerich)
+ {g:'spine',c:[[51.95,4.13],[51.90,4.35],[51.87,4.60],[51.83,4.98],[51.82,5.30],[51.84,5.86],[51.83,6.25],[51.66,6.62],[51.52,6.70],[51.43,6.76]]},
+ // Antwerp–Eindhoven–Venlo–Duisburg (A67/A40)
+ {g:'spine',c:[[51.26,4.40],[51.31,4.75],[51.44,5.48],[51.40,5.85],[51.37,6.17],[51.40,6.45],[51.43,6.76]]},
+ // Duisburg–Düsseldorf–Köln–Koblenz–Frankfurt (A3)
+ {g:'spine',c:[[51.43,6.76],[51.22,6.79],[51.05,6.90],[50.94,6.96],[50.83,7.13],[50.73,7.10],[50.55,7.35],[50.36,7.60],[50.22,7.95],[50.08,8.24],[50.11,8.68]]},
+ // Frankfurt–Mannheim–Karlsruhe–Freiburg–Basel (A5)
+ {g:'spine',c:[[50.11,8.68],[49.87,8.65],[49.49,8.47],[49.24,8.44],[49.01,8.40],[48.76,8.24],[48.47,7.94],[48.20,7.86],[47.99,7.85],[47.75,7.65],[47.56,7.59]]},
+ // Basel–Luzern–Gotthard–Bellinzona–Milano (A2)
+ {g:'spine',c:[[47.56,7.59],[47.35,7.90],[47.13,8.13],[47.05,8.30],[46.88,8.64],[46.66,8.60],[46.56,8.57],[46.36,8.80],[46.19,9.02],[45.98,8.95],[45.83,9.03],[45.65,9.10],[45.46,9.19]]},
+ // Milano–Genova (A7, qua Tortona/Serravalle)
+ {g:'spine',c:[[45.46,9.19],[45.18,9.02],[44.89,8.86],[44.72,8.86],[44.56,8.88],[44.40,8.93]]},
+
+ /* ============ B – ATLANTIC & MANCHE (west) ============ */
+ // London–Dover (M25 → M20, qua Dartford/Maidstone/Ashford)
+ {g:'west',c:[[51.51,-0.13],[51.45,0.22],[51.37,0.40],[51.27,0.52],[51.15,0.87],[51.13,1.15],[51.13,1.31]]},
+ // Dover–Calais : VƯỢT BIỂN (phà / Eurotunnel)
+ {g:'west',sea:'Phà / Eurotunnel',c:[[51.13,1.31],[51.02,1.60],[50.95,1.86]]},
+ // Calais–Dunkerque–Lille–Tournai–Brussels (A16/E42)
+ {g:'west',c:[[50.95,1.86],[51.00,2.10],[51.03,2.38],[50.85,2.72],[50.63,3.06],[50.61,3.39],[50.68,3.85],[50.85,4.35]]},
+ // Brussels–Mechelen–Antwerp (A1/E19)
+ {g:'west',c:[[50.85,4.35],[50.94,4.42],[51.03,4.48],[51.16,4.45],[51.26,4.40]]},
+ // Le Havre–Rouen–Paris (A13)
+ {g:'west',c:[[49.49,0.11],[49.47,0.55],[49.44,1.10],[49.24,1.32],[49.09,1.49],[48.95,1.90],[48.87,2.20],[48.86,2.35]]},
+ // Paris–Amiens–Arras–Lille (A1) — trước đây vẽ vòng nhầm xuống Burgundy
+ {g:'west',c:[[48.86,2.35],[49.05,2.45],[49.21,2.59],[49.42,2.83],[49.65,2.60],[49.89,2.30],[50.10,2.55],[50.29,2.78],[50.48,2.95],[50.63,3.06]]},
+ // Paris–Sens–Beaune–Mâcon–Lyon (A6)
+ {g:'west',c:[[48.86,2.35],[48.68,2.53],[48.54,2.66],[48.20,3.28],[47.80,3.57],[47.40,4.30],[47.02,4.84],[46.78,4.85],[46.31,4.83],[46.00,4.78],[45.76,4.83]]},
+ // Lyon–Valence–Avignon–Marseille (A7)
+ {g:'west',c:[[45.76,4.83],[45.35,4.82],[44.93,4.89],[44.56,4.75],[44.14,4.81],[43.95,4.81],[43.78,4.95],[43.64,5.10],[43.47,5.14],[43.34,5.05]]},
+ // Lyon–Chambéry–Maurienne–Fréjus (A43)
+ {g:'west',c:[[45.76,4.83],[45.59,5.27],[45.57,5.92],[45.48,6.06],[45.28,6.35],[45.19,6.55],[45.13,6.70]]},
+
+ /* ============ C – SCANDINAVIAN–MEDITERRANEAN (scan) ============ */
+ // Malmö–Copenhagen (cầu Øresund, đường bộ thật)
+ {g:'scan',c:[[55.60,13.00],[55.57,12.85],[55.62,12.65],[55.68,12.57]]},
+ // Copenhagen–Køge–Vordingborg–Rødby (E47)
+ {g:'scan',c:[[55.68,12.57],[55.56,12.30],[55.46,12.18],[55.20,11.95],[55.01,11.91],[54.83,11.60],[54.66,11.35]]},
+ // Rødby–Puttgarden : VƯỢT BIỂN (phà Fehmarn Belt)
+ {g:'scan',sea:'Phà Fehmarn',c:[[54.66,11.35],[54.58,11.28],[54.50,11.22]]},
+ // Puttgarden–Lübeck–Hamburg (E47/A1)
+ {g:'scan',c:[[54.50,11.22],[54.44,11.19],[54.37,10.98],[54.10,10.82],[53.87,10.69],[53.70,10.35],[53.55,9.99]]},
+ // Hamburg–Hannover–Kassel–Würzburg–Nürnberg–München (A7 → A9)
+ {g:'scan',c:[[53.55,9.99],[53.25,10.41],[52.99,9.84],[52.65,9.80],[52.37,9.73],[51.90,9.90],[51.53,9.94],[51.31,9.49],[50.90,9.60],[50.55,9.68],[50.15,9.85],[49.79,9.94],[49.60,10.60],[49.45,11.08],[49.10,11.20],[48.76,11.43],[48.45,11.50],[48.14,11.58]]},
+ // München–Rosenheim–Innsbruck–Brenner–Bolzano–Verona (A8/A13/A22)
+ {g:'scan',c:[[48.14,11.58],[47.86,12.13],[47.58,12.17],[47.42,11.75],[47.26,11.39],[47.12,11.45],[47.00,11.51],[46.75,11.45],[46.50,11.35],[46.07,11.12],[45.80,11.00],[45.44,10.99]]},
+ // Verona–Bologna–Firenze–Roma–Napoli (A1 Autostrada del Sole)
+ {g:'scan',c:[[45.44,10.99],[45.05,11.20],[44.49,11.34],[44.15,11.30],[43.77,11.25],[43.46,11.88],[43.10,12.10],[42.46,12.38],[42.10,12.45],[41.90,12.50],[41.75,13.00],[41.64,13.34],[41.35,13.85],[41.07,14.33],[40.85,14.27]]},
+ // Napoli–Salerno–Cosenza–Gioia Tauro (A2 Autostrada del Mediterraneo)
+ {g:'scan',c:[[40.85,14.27],[40.68,14.76],[40.39,15.59],[40.13,15.76],[39.80,16.10],[39.30,16.25],[38.96,16.31],[38.65,16.10],[38.43,15.90]]},
+
+ /* ============ D – BALTIC & ĐÔNG ÂU (east) ============ */
+ // Hannover–Magdeburg–Berlin (A2)
+ {g:'east',c:[[52.37,9.73],[52.27,10.52],[52.20,11.10],[52.13,11.63],[52.30,12.40],[52.40,13.06],[52.52,13.40]]},
+ // Berlin–Frankfurt(Oder)–Poznań–Łódź–Warszawa (A2)
+ {g:'east',c:[[52.52,13.40],[52.40,13.90],[52.35,14.55],[52.25,15.53],[52.35,16.30],[52.41,16.93],[52.30,17.60],[52.22,18.25],[51.90,18.90],[51.77,19.46],[51.95,20.30],[52.23,21.01]]},
+ // Gdańsk–Toruń–Włocławek–Warszawa (A1/S10)
+ {g:'east',c:[[54.35,18.65],[53.90,18.70],[53.49,18.75],[53.02,18.61],[52.65,19.07],[52.40,20.10],[52.23,21.01]]},
+ // Warszawa–Katowice–Ostrava–Brno–Wien (A1/D1)
+ {g:'east',c:[[52.23,21.01],[51.75,20.30],[51.40,19.70],[50.80,19.30],[50.26,19.02],[49.83,18.26],[49.60,17.25],[49.20,16.61],[48.75,16.55],[48.21,16.37]]},
+ // Wien–Graz–Klagenfurt–Villach–Udine–Trieste (A2/A23)
+ {g:'east',c:[[48.21,16.37],[47.70,15.90],[47.07,15.44],[46.80,14.80],[46.62,14.31],[46.61,13.85],[46.35,13.40],[46.06,13.24],[45.85,13.35],[45.65,13.77]]},
+ // Wien–Bratislava–Győr–Budapest (A4/M1)
+ {g:'east',c:[[48.21,16.37],[48.15,17.11],[47.90,17.40],[47.68,17.63],[47.60,18.30],[47.50,19.04]]},
+ // Praha–Jihlava–Brno–Wien (D1)
+ {g:'east',c:[[50.08,14.44],[49.75,15.00],[49.40,15.59],[49.20,16.61],[48.75,16.55],[48.21,16.37]]},
+ // Praha–Ústí–Dresden–Cottbus–Berlin (D8/A13)
+ {g:'east',c:[[50.08,14.44],[50.40,14.10],[50.66,14.04],[51.05,13.74],[51.40,14.00],[51.76,14.33],[52.10,13.80],[52.52,13.40]]},
+ // Piraeus–Athina–Larissa–Thessaloniki–Skopje–Beograd–Szeged–Budapest (E75)
+ {g:'east',c:[[37.94,23.64],[37.98,23.73],[38.35,23.10],[38.90,22.43],[39.35,22.40],[39.64,22.42],[40.20,22.55],[40.64,22.94],[41.10,22.50],[41.99,21.43],[42.60,21.75],[43.32,21.90],[44.02,21.00],[44.79,20.45],[45.25,19.84],[45.80,20.00],[46.25,20.15],[46.90,19.60],[47.50,19.04]]},
+
+ /* ============ E – MEDITERRANEAN (med) ============ */
+ // Algeciras–Sevilla–Córdoba–Madrid (A-4)
+ {g:'med',c:[[36.13,-5.44],[36.35,-5.80],[36.68,-6.14],[37.10,-6.05],[37.39,-5.98],[37.65,-5.35],[37.89,-4.78],[38.50,-4.20],[39.30,-3.90],[40.00,-3.75],[40.42,-3.70]]},
+ // Madrid–Zaragoza–Lleida–Barcelona (A-2)
+ {g:'med',c:[[40.42,-3.70],[40.63,-3.16],[41.00,-2.40],[41.35,-1.64],[41.65,-0.88],[41.62,0.63],[41.55,1.30],[41.35,2.16]]},
+ // Valencia–Castellón–Tarragona–Barcelona (AP-7, bám bờ trên đất liền)
+ {g:'med',c:[[39.44,-0.32],[39.70,-0.20],[39.99,-0.04],[40.40,0.30],[40.81,0.52],[41.12,1.25],[41.23,1.70],[41.35,2.16]]},
+ // Barcelona–Girona–Perpignan–Montpellier–Marseille (AP-7/A9/A54) — trước đây cắt qua vịnh Lion
+ {g:'med',c:[[41.35,2.16],[41.70,2.55],[41.98,2.82],[42.27,2.96],[42.50,2.90],[42.70,2.90],[43.00,2.95],[43.18,3.00],[43.40,3.40],[43.61,3.88],[43.84,4.36],[43.70,4.85],[43.64,5.10],[43.47,5.14],[43.34,5.05]]},
+ // Marseille–Aix–Cannes–Nice–Sanremo–Savona–Genova (A8/A10) — trước đây cắt qua biển Ligure
+ {g:'med',c:[[43.34,5.05],[43.53,5.45],[43.45,5.80],[43.41,6.06],[43.43,6.74],[43.55,7.02],[43.70,7.27],[43.78,7.50],[43.82,7.78],[44.00,8.00],[44.15,8.30],[44.31,8.48],[44.40,8.93]]},
+ // Genova–Milano–Brescia–Verona–Venezia–Trieste (A4)
+ {g:'med',c:[[44.40,8.93],[44.72,8.86],[45.18,9.02],[45.46,9.19],[45.54,10.22],[45.44,10.99],[45.55,11.55],[45.49,12.24],[45.78,12.84],[45.72,13.35],[45.65,13.77]]},
+];
+
+const groups={spine:L.layerGroup(),west:L.layerGroup(),scan:L.layerGroup(),east:L.layerGroup(),med:L.layerGroup()};
+corridors.forEach(seg=>{
+ const col=CO[seg.g];
+ if(seg.sea){
+   const line=L.polyline(seg.c,{pane:'linesPane',color:'#1c7ed6',weight:3,opacity:.95,dashArray:'2 9',lineCap:'round'}).addTo(groups[seg.g]);
+   line.bindTooltip('⚓ '+seg.sea,{permanent:true,direction:'center',className:'sea-label'});
+   line.bindPopup('<div class="pop-t">Vượt eo biển Manche</div>'+
+     '<div class="pop-role">Dover ⇄ Calais (~33 km) không có đường bộ — xe được chở qua bằng một trong hai cách:</div>'+
+     '<div class="pop-tt"><b>Phà:</b> xe tự lái lên phà biển, ~1h30.<br><b>Eurotunnel Le Shuttle:</b> xe lên đoàn tàu qua hầm đường sắt dưới đáy biển, ~35 phút. Cả hai cần thủ tục hải quan hậu Brexit.</div>');
+   return;
+ }
+ L.polyline(seg.c,{pane:'linesPane',color:col,weight:seg.g==='spine'?6:4.5,opacity:.9,lineCap:'round',lineJoin:'round'}).addTo(groups[seg.g]);
+ if(seg.g==='spine') L.polyline(seg.c,{pane:'linesPane',color:'#fff',weight:2,opacity:.9,interactive:false,className:'flow'}).addTo(groups.spine);
+});
+Object.values(groups).forEach(g=>g.addTo(map));
+
+/* ---------- TOGGLES ---------- */
+document.querySelectorAll('.row[data-layer]').forEach(row=>{
+ const key=row.dataset.layer, box=row.querySelector('input');
+ row.addEventListener('click',e=>{
+   if(e.target.tagName!=='INPUT') box.checked=!box.checked;
+   row.classList.toggle('off',!box.checked);
+   if(box.checked) groups[key].addTo(map); else map.removeLayer(groups[key]);
+ });
+});
+
+map.fitBounds(L.latLngBounds([[35.5,-7.5],[59.6,25]]),{padding:[18,18]});
+</script>
+</body>
+</html>

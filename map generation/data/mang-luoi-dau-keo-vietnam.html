@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mạng lưới đầu kéo container – Việt Nam</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  :root{
+    --ink:#0b1220; --panel:#0f1729; --panel2:#16203a; --line:#243252;
+    --txt:#e7edf7; --muted:#93a2be; --amber:#e8590c; --teal:#0c8599;
+    --purple:#9c36b5; --green:#2f9e44; --red:#e03131; --deep:#c2255c;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:var(--sans);background:var(--ink);color:var(--txt)}
+  #map{position:absolute;inset:0;z-index:1;background:#aad3df}
+  .leaflet-container{font-family:var(--sans)}
+
+  /* Console panel */
+  #console{
+    position:absolute;z-index:1000;top:14px;left:14px;width:320px;max-width:calc(100vw - 28px);
+    max-height:calc(100vh - 28px);overflow:auto;background:rgba(15,23,41,.94);
+    border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px);
+    box-shadow:0 18px 50px rgba(0,0,0,.45);
+  }
+  #console header{padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+  .kicker{font:600 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--amber)}
+  h1{margin:8px 0 2px;font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .sub{font-size:12px;color:var(--muted);line-height:1.45}
+  .body{padding:12px 16px 16px}
+  .grp{margin:0 0 14px}
+  .grp h2{font:700 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+
+  .row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:9px;cursor:pointer;user-select:none}
+  .row:hover{background:var(--panel2)}
+  .row input{display:none}
+  .swatch{width:26px;height:0;border-radius:2px;flex:none;position:relative}
+  .swatch::after{content:"";position:absolute;inset:-4px 0;border-radius:2px}
+  .sw-line{border-top:4px solid var(--amber)}
+  .sw-teal{border-top:4px solid var(--teal)}
+  .sw-purple{border-top:0;border-image:none;background:
+      repeating-linear-gradient(90deg,var(--purple) 0 7px,transparent 7px 12px);height:4px;border-radius:2px}
+  .sw-green{background:repeating-linear-gradient(90deg,var(--green) 0 6px,transparent 6px 11px);height:3px;border-radius:2px}
+  .dot{width:13px;height:13px;border-radius:50%;flex:none;border:2px solid #fff2}
+  .d-red{background:var(--red)} .d-deep{background:var(--deep)}
+  .d-amber{background:#f08c00} .d-purple{background:var(--purple)}
+  .diamond{width:12px;height:12px;transform:rotate(45deg);border:2px solid #fff3}
+  .rlabel{font-size:12.5px;line-height:1.25}
+  .rlabel small{display:block;color:var(--muted);font-size:10.5px}
+  .row.off .rlabel,.row.off .swatch,.row.off .dot,.row.off .diamond{opacity:.32}
+
+  .legend-note{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px dashed var(--line);padding-top:10px}
+  .legend-note b{color:var(--txt);font-weight:700}
+  .foot{font:500 10px/1.4 var(--mono);color:#5f6f8c;padding:0 16px 14px}
+
+  /* Popups */
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:12px}
+  .leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+  .leaflet-popup-content{margin:12px 14px;font-size:12.5px;line-height:1.5}
+  .pop-t{font-weight:800;font-size:14px;margin-bottom:1px}
+  .pop-tag{font:600 9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:3px 6px;border-radius:5px;display:inline-block;margin-bottom:8px}
+  .pop-role{color:var(--muted);margin-bottom:8px}
+  .pop-tt{background:var(--panel2);border-left:3px solid var(--amber);padding:7px 9px;border-radius:0 7px 7px 0;font-size:11.5px}
+  .pop-tt b{color:#ffd8a8}
+
+  /* signature: convoy flow along the trunk spine */
+  @media (prefers-reduced-motion:no-preference){
+    .flow{stroke-dasharray:2 16;animation:convoy 1.1s linear infinite}
+    @keyframes convoy{to{stroke-dashoffset:-18}}
+  }
+  .toggle-btn{display:none}
+  @media(max-width:560px){
+    #console{width:auto;right:14px}
+    .toggle-btn{display:inline-block;margin-top:8px;background:var(--panel2);border:1px solid var(--line);
+      color:var(--txt);font:600 11px var(--mono);padding:6px 10px;border-radius:8px;cursor:pointer}
+    #console.min .body,#console.min .foot{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<aside id="console">
+  <header>
+    <div class="kicker">Fleet Network · Đầu kéo container</div>
+    <h1>Mạng lưới vận tải đầu kéo — Việt Nam</h1>
+    <div class="sub">Cấu trúc hub-and-spoke bám trục cao tốc Bắc–Nam (CT.01), kết nối cảng biển, ICD và cửa khẩu. Nền bản đồ OpenStreetMap.</div>
+    <button class="toggle-btn" onclick="document.getElementById('console').classList.toggle('min')">Ẩn / hiện bảng ▾</button>
+  </header>
+  <div class="body">
+    <div class="grp">
+      <h2>Hành lang vận tải</h2>
+      <label class="row" data-layer="spine"><input type="checkbox" checked><span class="swatch sw-line"></span><span class="rlabel">Trục xương sống Bắc–Nam<small>CT.01 cao tốc · convoy chính</small></span></label>
+      <label class="row" data-layer="conn"><input type="checkbox" checked><span class="swatch sw-teal"></span><span class="rlabel">Nhánh nối cảng<small>Cảng ⇄ ICD · gom & giải phóng hàng</small></span></label>
+      <label class="row" data-layer="border"><input type="checkbox" checked><span class="swatch sw-purple"></span><span class="rlabel">Hành lang xuyên biên giới<small>Cửa khẩu → TQ · CPC · Lào</small></span></label>
+      <label class="row off" data-layer="backup"><input type="checkbox"><span class="swatch sw-green"></span><span class="rlabel">QL1A — tuyến dự phòng<small>Bật khi cao tốc gián đoạn</small></span></label>
+    </div>
+    <div class="grp">
+      <h2>Điểm nút</h2>
+      <label class="row" data-layer="nodes"><input type="checkbox" checked><span class="dot d-deep"></span><span class="rlabel">Cảng cửa ngõ nước sâu<small>Lạch Huyện · Cái Mép</small></span></label>
+      <label class="row" data-layer="nodes2"><input type="checkbox" checked><span class="dot d-red"></span><span class="rlabel">Cảng biển container</span></label>
+      <label class="row" data-layer="nodes3"><input type="checkbox" checked><span class="dot d-amber"></span><span class="rlabel">ICD / Hub nội địa</span></label>
+      <label class="row" data-layer="nodes4"><input type="checkbox" checked><span class="diamond" style="background:var(--purple)"></span><span class="rlabel">Cửa khẩu quốc tế</span></label>
+    </div>
+    <div class="legend-note">
+      <b>Ràng buộc xe đầu kéo:</b> nội đô TP.HCM cấm 6:00–22:00, Hà Nội cấm 6:00–21:00 + hạn chế Vành đai 3 trên cao giờ cao điểm. Chặng last-mile vào cảng đô thị (Cát Lái, Mỹ Đình) chủ yếu chạy <b>đêm 22:00–06:00</b>.
+    </div>
+  </div>
+  <div class="foot">Nền: © OpenStreetMap · Hạ tầng cập nhật 2026</div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const map = L.map('map',{zoomControl:true,attributionControl:true}).setView([16.3,107.2],5.6);
+L.control.attribution({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:18, attribution:'© OpenStreetMap contributors'
+}).addTo(map);
+
+const C = {amber:'#e8590c',teal:'#0c8599',purple:'#9c36b5',green:'#2f9e44',red:'#e03131',deep:'#c2255c',hub:'#f08c00'};
+
+/* ---------- NODES ---------- */
+const nodes = [
+  // deep-sea gateways
+  {id:'lachhuyen',name:'Cảng Hải Phòng',sub:'Lạch Huyện – Đình Vũ',t:'deep',lat:20.80,lng:106.86,
+    role:'Cảng cửa ngõ nước sâu miền Bắc — đón tàu mẹ, phục vụ toàn bộ vùng công nghiệp phía Bắc.',
+    tt:'Nối Hà Nội qua CT.04 (Hà Nội–Hải Phòng) + QL5. Chạy thông suốt, ít bị giờ cấm.'},
+  {id:'caimep',name:'Cảng Cái Mép – Thị Vải',sub:'Phú Mỹ, Bà Rịa–Vũng Tàu',t:'deep',lat:10.53,lng:107.02,
+    role:'Cảng nước sâu duy nhất đón tàu mẹ đi thẳng Âu/Mỹ, không cần trung chuyển Singapore/HongKong.',
+    tt:'Nối HCMC qua cao tốc Biên Hòa–Vũng Tàu + QL51. Ưu tiên gom hàng xuất khẩu giá trị cao.'},
+  // container ports
+  {id:'danang',name:'Cảng Đà Nẵng',sub:'Tiên Sa',t:'port',lat:16.11,lng:108.22,
+    role:'Cửa ngõ biển miền Trung, đầu mối Hành lang Kinh tế Đông–Tây (EWEC).',
+    tt:'Nằm ngay trên trục CT.01 — thuận cả Bắc–Nam lẫn hướng Tây qua Lao Bảo.'},
+  {id:'quynhon',name:'Cảng Quy Nhơn',sub:'Bình Định',t:'port',lat:13.76,lng:109.24,
+    role:'Cảng gom hàng Nam Trung Bộ & Tây Nguyên (nông sản, gỗ, dăm).',
+    tt:'Trên trục CT.01; last-mile lên Tây Nguyên (QL19) là chặng đèo, tải trọng hạn chế.'},
+  {id:'catlai',name:'Cảng Cát Lái',sub:'TP. Thủ Đức, TP.HCM',t:'port',lat:10.76,lng:106.79,
+    role:'Cảng container bận rộn nhất Việt Nam — trung tâm sản lượng của mạng lưới.',
+    tt:'Nằm trong lõi đô thị: đầu kéo cấm 6:00–22:00 → khai thác chủ yếu ban đêm, gom hàng trước ở Sóng Thần.'},
+  // inland hubs / ICD
+  {id:'tienson',name:'ICD Tiên Sơn',sub:'Bắc Ninh',t:'hub',lat:21.13,lng:106.03,
+    role:'Cảng cạn phục vụ thủ phủ điện tử (Samsung, Foxconn…) — thông quan & gom hàng trước khi ra Hải Phòng.',
+    tt:'Nút phân phối phía Bắc: nối Hải Phòng, Hà Nội và cửa khẩu Hữu Nghị.'},
+  {id:'mydinh',name:'ICD Mỹ Đình / Hà Nội',sub:'Hà Nội',t:'hub',lat:21.03,lng:105.78,
+    role:'Đầu mối phân phối nội thành & vùng thủ đô.',
+    tt:'Container cấm nội đô 6:00–21:00, hạn chế Vành đai 3 trên cao giờ cao điểm → đi Vành đai + chạy đêm.'},
+  {id:'vinh',name:'TMT Logistic (Vinh)',sub:'Nghệ An',t:'hub',lat:18.68,lng:105.68,
+    role:'Hub trung chuyển & gom hàng cho dải Bắc Trung Bộ.',
+    tt:'Điểm nghỉ/đổi tài trên chặng dài Hà Nội–Đà Nẵng, cân bằng thời gian lái xe.'},
+  {id:'songthan',name:'ICD Sóng Thần',sub:'Dĩ An, Bình Dương',t:'hub',lat:10.89,lng:106.75,
+    role:'Cảng cạn lớn nhất phía Nam — gom & thông quan trước, giảm ùn tắc tại Cát Lái/Cái Mép.',
+    tt:'Nút điều phối trung tâm miền Nam: tỏa đi Cát Lái, Cái Mép, Cần Thơ, Mộc Bài.'},
+  {id:'cantho',name:'Hub Cần Thơ',sub:'ĐBSCL',t:'hub',lat:10.03,lng:105.78,
+    role:'Đầu mối gom nông – thủy sản Đồng bằng sông Cửu Long.',
+    tt:'Nối HCMC qua CT.01 (Trung Lương–Mỹ Thuận–Cần Thơ) đã thông toàn tuyến.'},
+  // border gates
+  {id:'huunghi',name:'Cửa khẩu Hữu Nghị',sub:'Lạng Sơn → Nam Ninh (TQ)',t:'border',lat:21.95,lng:106.70,
+    role:'Cửa khẩu đường bộ chính sang Trung Quốc.',
+    tt:'Nối qua cao tốc Hà Nội–Bắc Giang–Lạng Sơn. Chú ý khác biệt khổ/xe & thủ tục liên vận.'},
+  {id:'laocai',name:'Cửa khẩu Lào Cai',sub:'→ Côn Minh (TQ)',t:'border',lat:22.49,lng:103.95,
+    role:'Cửa ngõ Tây Bắc sang Vân Nam, Trung Quốc.',
+    tt:'Nối qua CT.05 Nội Bài–Lào Cai; nhiều đoạn 2 làn, tốc độ khai thác hạn chế.'},
+  {id:'laobao',name:'Cửa khẩu Lao Bảo',sub:'Quảng Trị → Lào (EWEC)',t:'border',lat:16.62,lng:106.60,
+    role:'Cổng Hành lang Kinh tế Đông–Tây sang Lào/Thái Lan.',
+    tt:'Qua QL9 từ Đà Nẵng/Đông Hà — chặng đèo, phù hợp đầu kéo tải vừa.'},
+  {id:'mocbai',name:'Cửa khẩu Mộc Bài',sub:'Tây Ninh → Phnom Penh (CPC)',t:'border',lat:11.08,lng:106.17,
+    role:'Cửa khẩu chính sang Campuchia.',
+    tt:'Nối HCMC qua QL22 / cao tốc TP.HCM–Mộc Bài (đang hình thành).'},
+];
+
+const style = {
+  deep:{color:'#fff',fill:C.deep,r:10,w:3},
+  port:{color:'#fff',fill:C.red,r:8,w:2},
+  hub:{color:'#fff',fill:C.hub,r:8,w:2},
+  border:{color:'#fff',fill:C.purple,r:8,w:2},
+};
+
+const nodeLayer = L.layerGroup().addTo(map);
+function popup(n){
+  const tagColor = n.t==='deep'?C.deep : n.t==='port'?C.red : n.t==='hub'?C.hub : C.purple;
+  const tagTxt = n.t==='deep'?'Cảng nước sâu' : n.t==='port'?'Cảng container' : n.t==='hub'?'ICD / Hub' : 'Cửa khẩu';
+  return `<div class="pop-t">${n.name}</div>
+    <span class="pop-tag" style="background:${tagColor}22;color:${tagColor};border:1px solid ${tagColor}55">${tagTxt}${n.sub?' · '+n.sub:''}</span>
+    <div class="pop-role">${n.role}</div>
+    <div class="pop-tt"><b>Đầu kéo:</b> ${n.tt}</div>`;
+}
+nodes.forEach(n=>{
+  const s = style[n.t];
+  const m = (n.t==='border'
+    ? L.marker([n.lat,n.lng],{icon:L.divIcon({className:'',iconSize:[16,16],
+        html:`<div style="width:13px;height:13px;background:${C.purple};border:2px solid #fff;transform:rotate(45deg);box-shadow:0 1px 4px #0006"></div>`})})
+    : L.circleMarker([n.lat,n.lng],{radius:s.r,color:s.color,weight:s.w,fillColor:s.fill,fillOpacity:1})
+  );
+  m.bindPopup(popup(n),{maxWidth:280});
+  m.bindTooltip(n.name,{direction:'right',offset:[10,0],opacity:.9});
+  m.addTo(nodeLayer);
+});
+
+/* ---------- CORRIDORS ---------- */
+// spine (CT.01 Bắc–Nam)
+const spineSegs = [
+  [[21.03,105.78],[20.25,105.97],[19.81,105.78],[18.68,105.68]],          // HN–Ninh Bình–Thanh Hóa–Vinh
+  [[18.68,105.68],[17.48,106.62],[16.46,107.60],[16.11,108.22]],          // Vinh–Đồng Hới–Huế–Đà Nẵng
+  [[16.11,108.22],[15.12,108.80],[13.76,109.24]],                        // Đà Nẵng–Quảng Ngãi–Quy Nhơn
+  [[13.76,109.24],[12.24,109.19],[10.93,108.10],[10.89,106.75]],          // Quy Nhơn–Nha Trang–Phan Thiết–Sóng Thần
+  [[10.89,106.75],[10.60,106.36],[10.28,105.96],[10.03,105.78]],          // HCMC–Trung Lương–Mỹ Thuận–Cần Thơ
+];
+// port / gateway connectors
+const connSegs = [
+  [[20.80,106.86],[20.98,106.40],[21.13,106.03]],   // Hải Phòng–Tiên Sơn (CT.04+QL5)
+  [[21.13,106.03],[21.06,105.90],[21.03,105.78]],   // Tiên Sơn–Mỹ Đình
+  [[10.89,106.75],[10.82,106.78],[10.76,106.79]],   // Sóng Thần–Cát Lái (đô thị, chạy đêm)
+  [[10.89,106.75],[10.74,106.90],[10.58,107.00],[10.53,107.02]], // Sóng Thần–Cái Mép (BHVT+QL51)
+];
+// cross-border corridors
+const borderSegs = [
+  [[21.13,106.03],[21.35,106.25],[21.65,106.48],[21.95,106.70]],         // Tiên Sơn–Hữu Nghị
+  [[21.03,105.78],[21.32,105.55],[21.75,104.90],[22.15,104.35],[22.49,103.95]], // HN–Lào Cai (CT.05)
+  [[10.89,106.75],[10.99,106.52],[11.05,106.33],[11.08,106.17]],         // Sóng Thần–Mộc Bài (QL22)
+  [[16.11,108.22],[16.46,107.60],[16.55,107.00],[16.62,106.60]],         // Đà Nẵng–Lao Bảo (QL9)
+];
+// QL1A backup (parallel, off by default) – slight coastal offset
+const backupSegs = [
+  [[21.03,105.85],[20.25,106.05],[19.81,105.86],[18.68,105.75]],
+  [[18.68,105.75],[17.48,106.70],[16.46,107.66],[16.11,108.28]],
+  [[16.11,108.28],[15.12,108.87],[13.76,109.30]],
+  [[13.76,109.30],[12.24,109.25],[10.93,108.16],[10.89,106.82]],
+];
+
+const spine  = L.layerGroup();
+const conn   = L.layerGroup();
+const border = L.layerGroup();
+const backup = L.layerGroup();
+
+spineSegs.forEach(seg=>{
+  L.polyline(seg,{color:C.amber,weight:6,opacity:.95,lineCap:'round'}).addTo(spine);
+  L.polyline(seg,{color:'#fff',weight:2,opacity:.9,className:'flow'}).addTo(spine); // convoy signature
+});
+connSegs.forEach(seg=>L.polyline(seg,{color:C.teal,weight:5,opacity:.9,lineCap:'round'}).addTo(conn));
+borderSegs.forEach(seg=>L.polyline(seg,{color:C.purple,weight:4,opacity:.85,dashArray:'2 9',lineCap:'round'}).addTo(border));
+backupSegs.forEach(seg=>L.polyline(seg,{color:C.green,weight:3,opacity:.75,dashArray:'1 7',lineCap:'round'}).addTo(backup));
+
+spine.addTo(map); conn.addTo(map); border.addTo(map);
+
+/* ---------- LAYER TOGGLES ---------- */
+const layerMap = {spine, conn, border, backup, nodes:nodeLayer};
+// node sub-toggles filter by type — simple approach: one nodes layer, sub rows just visually shown
+document.querySelectorAll('.row').forEach(row=>{
+  const key = row.dataset.layer;
+  const box = row.querySelector('input');
+  row.addEventListener('click',e=>{
+    if(e.target.tagName!=='INPUT') box.checked=!box.checked;
+    row.classList.toggle('off',!box.checked);
+    const lyr = layerMap[key];
+    if(lyr){
+      if(box.checked){ lyr.addTo(map); } else { map.removeLayer(lyr); }
+    }
+    // node sub-rows (nodes2/3/4) share the same nodeLayer visually; keep them as legend only
+    if(['nodes2','nodes3','nodes4'].includes(key)){ /* legend-only */ }
+  });
+});
+
+map.fitBounds(L.latLngBounds([[8.5,103.5],[23.2,109.8]]),{padding:[20,20]});
+</script>
+</body>
+</html>
