@@ -16,8 +16,10 @@ import pickle
 def fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
 
+
 region_set = ["map Viet Nam","map Europe","map America"]
-region = region_set[2]
+map_ID = 1
+region = region_set[map_ID]
 
 with open(f"map generation/{region}/route_library.pkl","rb") as f: 
     RouteLibrary = pickle.load(f)
@@ -41,15 +43,18 @@ del destination, n_nodes, origin, route, route_id, routes
 N_set = [60]
 for N in N_set:
     for trial in range(1):
+        
+        np.random.seed(trial)
+        
         # N = 100
         POP_SIZE = 100
         MaxIt = 250
         
-        TIME_WINDOW = (0, 96)
-        ARRIVAL_TIMES = np.random.randint(0, 24, N)
-        max_wait = 3
+        TIME_WINDOW = (0, 48)
+        ARRIVAL_TIMES = np.random.randint(0, 6, N)
+        max_wait = 4
         
-        locations = load_locations(1)
+        locations = load_locations(map_ID)
 
         ORIGINS = [
             name for name, info in locations.items()
@@ -87,7 +92,7 @@ for N in N_set:
         )
         
         best_fit = fitness(best, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-        
+        print(f"Case {N}N, Trial {trial}, Iter 0: {best_fit:.4f}")
         # %% TLBO LOOP
         start_time = time.time()
         for it in range(MaxIt):

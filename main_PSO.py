@@ -9,18 +9,23 @@ import numpy as np
 import time
 
 from utils.fitness_functions import weighted_fitness
-from utils.workspace_functions import save_mat
+from utils.workspace_functions import save_mat, load_locations
 from utils.algorithm_functions import PSO_init_individual, update_particle
 
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
 
-with open("map generation/route_library.pkl","rb") as f: 
+region_set = ["map Viet Nam","map Europe","map America"]
+map_ID = 1
+region = region_set[map_ID]
+
+with open(f"map generation/{region}/route_library.pkl","rb") as f: 
     RouteLibrary = pickle.load(f)
     
-route_options = len(RouteLibrary[('Ha Noi ICD', 'Song Than ICD')])
+print(f"simulation on {region}")
 
+route_options = len(next(iter(RouteLibrary.values())))
 N_trans = 0
 for (origin, destination), routes in RouteLibrary.items():
     for route_id, route in routes.items():
@@ -30,9 +35,13 @@ for (origin, destination), routes in RouteLibrary.items():
 
 del destination, n_nodes, origin, route, route_id, routes
 # %%PARAMETERS
-N_set = [60, 80, 100]
+# N_set = [60, 80, 100]
+N_set = [60]
 for N in N_set:
-    for trial in range(50):
+    for trial in range(1):
+        
+        np.random.seed(trial)
+        
         # N = 100
         POP_SIZE = 100
         MaxIt = 250
@@ -40,13 +49,21 @@ for N in N_set:
         C1 = 1.5
         C2 = 1.5
         
-        TIME_WINDOW = (0, 96)
-        ARRIVAL_TIMES = np.random.randint(0, 24, N)
-        UNCERTAIN_TIMES = np.random.randint(0, 2, N)
-        max_wait = 3
+        TIME_WINDOW = (0, 48)
+        ARRIVAL_TIMES = np.random.randint(0, 6, N)
+        max_wait = 4
         
-        ORIGINS = ["Ha Noi ICD", "Hai Phong Port", "Tien Son ICD"]
-        DESTINATIONS = ["Song Than ICD", "Cat Lai Port", "Cai Mep Port"]
+        locations = load_locations(map_ID)
+
+        ORIGINS = [
+            name for name, info in locations.items()
+            if info["type"] == "start"
+        ]
+        
+        DESTINATIONS = [
+            name for name, info in locations.items()
+            if info["type"] == "destination"
+        ]
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
@@ -81,7 +98,7 @@ for N in N_set:
             key=lambda ind:
             fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
         )
-        
+        print(f"Case {N}N, Trial {trial}, Iter 0: {fitness(gbest, init, ARRIVAL_TIMES, N_trans, RouteLibrary):.4f}")
         # %% PSO LOOP
         start_loop = time.time()
         for it in range(MaxIt):

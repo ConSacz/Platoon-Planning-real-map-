@@ -10,17 +10,23 @@ import pickle
 
 from utils.algorithm_functions import crossover, mutate, selection_etilist, init_individual
 from utils.fitness_functions import weighted_fitness
-from utils.workspace_functions import save_mat
+from utils.workspace_functions import save_mat, load_locations
 
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary)
 
-# %%PARAMETERS
-with open("map generation/route_library.pkl","rb") as f: 
+
+region_set = ["map Viet Nam","map Europe","map America"]
+map_ID = 2
+region = region_set[map_ID]
+
+with open(f"map generation/{region}/route_library.pkl","rb") as f: 
     RouteLibrary = pickle.load(f)
     
-route_options = len(RouteLibrary[('Ha Noi ICD', 'Song Than ICD')])
+print(f"simulation on {region}")
+
+route_options = len(next(iter(RouteLibrary.values())))
 
 N_trans = 0
 for (origin, destination), routes in RouteLibrary.items():
@@ -30,21 +36,32 @@ for (origin, destination), routes in RouteLibrary.items():
             N_trans = n_nodes
 
 del destination, n_nodes, origin, route, route_id, routes
-
+# %%PARAMETERS
 N_set = [60, 80, 100]
 for N in N_set:
     for trial in range(50):
+        
+        np.random.seed(trial)
+        
         # N = 100
         POP_SIZE = 100
         MaxIt = 250
         
-        TIME_WINDOW = (0, 96)
-        ARRIVAL_TIMES = np.random.randint(0, 24, N)
-        UNCERTAIN_TIMES = np.random.randint(0, 2, N)
-        max_wait = 3
+        TIME_WINDOW = (0, 48)
+        ARRIVAL_TIMES = np.random.randint(0, 6, N)
+        max_wait = 4
         
-        ORIGINS = ["Ha Noi ICD", "Hai Phong Port", "Tien Son ICD"]
-        DESTINATIONS = ["Song Than ICD", "Cat Lai Port", "Cai Mep Port"]
+        locations = load_locations(map_ID)
+
+        ORIGINS = [
+            name for name, info in locations.items()
+            if info["type"] == "start"
+        ]
+        
+        DESTINATIONS = [
+            name for name, info in locations.items()
+            if info["type"] == "destination"
+        ]
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
