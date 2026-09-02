@@ -3,6 +3,7 @@
 #     get_ipython().run_line_magic('reset', '-f')
 # except:
 #     pass
+
 # %%
 import numpy as np
 import time
@@ -16,7 +17,6 @@ import pickle
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-
 
 region_set = ["map Viet Nam","map Europe","map America"]
 map_ID = 1
@@ -113,14 +113,7 @@ for N in N_set:
             x = r * np.sin(phi)
             y = r * np.cos(phi)
             QF = it ** ((2 * np.random.rand() - 1) / (1 - MaxIt) ** 2)
-            
-            # TEACHER
-            teacher = min(
-                pop,
-                key=lambda ind:
-                fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-            )
-        
+     
             mean_ind = population_mean(pop, route_options, max_wait)
         
             for i in range(POP_SIZE):
@@ -218,5 +211,5 @@ for N in N_set:
         file_name = f'TLBO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
-        del current_best, current_fit, it, fit_i, fit_j, fit_new, fit_old, i, j, new_ind
-        del MaxIt, mean_ind, POP_SIZE, start_time, teacher
+        del MaxIt, levy_route, levy_wait, mean_ind, omega, phi, phi0, pi, QF, r, r0, start_time, x, y
+        del alpha, delta, f, fi, G1, G2, i, ind, ind_cost, j, to, u, current_best, current_fit, it
