@@ -126,14 +126,7 @@ for N in N_set:
                         
                         ind['route'] = (best['route'] * (1 - it / MaxIt) + (np.mean(ind['route']) - best['route']) * np.random.rand())
                         ind['wait'] = (best['wait'] * (1 - it / MaxIt) + (np.mean(ind['wait']) - best['wait']) * np.random.rand())
-                        ind = clamp_individual(ind, route_options, max_wait)
-                        
-                        ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                        if ind_cost <= fi:
-                            pop[i] = copy_ind(ind)
-                            if ind_cost < best_fit:
-                                best = ind
-                                best_fit = ind_cost
+
                     else:
                         j = np.random.randint(POP_SIZE)
                         ind = copy_ind(pop[i])
@@ -144,14 +137,7 @@ for N in N_set:
                         
                         ind['route'] = (best['route'] * levy_route + pop[j]['route'] + (y - x) * np.random.rand())
                         ind['wait'] = (best['wait'] * levy_wait + pop[j]['wait'] + (y - x) * np.random.rand())
-                        ind = clamp_individual(ind, route_options, max_wait)
-                        
-                        ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                        if ind_cost <= fi:
-                            pop[i] = copy_ind(ind)
-                            if ind_cost < best_fit:
-                                best = ind
-                                best_fit = ind_cost
+
                                 
                 # %% EXPLOITATION
                 else:
@@ -164,14 +150,7 @@ for N in N_set:
                                         np.random.rand() + (np.random.rand(N)) * delta)
                         ind['wait'] = ((best['wait'] - np.mean(mean_ind['wait'])) * alpha - 
                                         np.random.rand() + (np.random.rand(N_trans - 1, N)) * delta)
-                        ind = clamp_individual(ind, route_options, max_wait)
-                        
-                        ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                        if ind_cost <= fi:
-                            pop[i] = copy_ind(ind)
-                            if ind_cost < best_fit:
-                                best = ind
-                                best_fit = ind_cost
+
                     else:
                         ind = copy_ind(pop[i])
                         fi = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
@@ -183,14 +162,14 @@ for N in N_set:
                                         G1 * levy_route + np.random.rand() * G2)
                         ind['wait'] = (QF * best['wait'] - G2 * ind['wait'] * np.random.rand() - 
                                         G1 * levy_wait + np.random.rand() * G2)
-                        ind = clamp_individual(ind, route_options, max_wait)
-                        
-                        ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                        if ind_cost <= fi:
-                            pop[i] = copy_ind(ind)
-                            if ind_cost < best_fit:
-                                best = ind
-                                best_fit = ind_cost
+                ind = clamp_individual(ind, route_options, max_wait)
+                
+                ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
+                if ind_cost <= fi:
+                    pop[i] = copy_ind(ind)
+                    if ind_cost < best_fit:
+                        best = ind
+                        best_fit = ind_cost
             # %% GLOBAL BEST
             current_best = min(
                 pop,

@@ -175,4 +175,5 @@ for N in N_set:
         file_name = f'TLBO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
-
+        del i, ind, ind_cost, it, best_neighbor, best_neighbor_cost, beta, Delta_g, f, fi, fr, r
+        del MaxIt, POP_SIZE, start_time, V_route, V_wait, W_global_route, W_global_wait, xi, xr

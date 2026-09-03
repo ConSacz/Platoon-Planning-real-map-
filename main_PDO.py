@@ -169,6 +169,7 @@ for N in N_set:
             print(f"Case {N}N, Trial {trial}, Iter {it}: {best_fit:.4f}")
         total_time = (time.time() - start_time)/60
         
+        print (f"runtime: {total_time:.4f}min")
         folder_name = f'data/case_{N}/TLBO'
         file_name = f'TLBO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
