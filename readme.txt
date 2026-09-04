@@ -11,7 +11,10 @@ Path-planning and Scheduling optimization using GA, PSO, TLBO, AO, PDO, FDA
 + Trucks can decide to depart right after arrive, or wait for other to form platoon, platoon order depends on priority index
 + When arrive transit hubs trucks can wait for other to form platoon, platoon order depends on priority index
 
--Optimization variable: (truck routes, wait time)
+-Optimization variable (of a population of N trucks): (truck routes, wait time, priority rank)
++ truck routes: vector (N,)
++ wait time: matrix (N_trans-1, N) (N_trans is the maximum number of transit nodes in available routes)
++ priority rank: permutation of (N_trans-1)
 
 -Fitness functions: 
 + total fuel cost(dollar): depends on distance travel, forming platoon and order in platoon
