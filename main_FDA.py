@@ -171,8 +171,8 @@ for N in N_set:
             print(f"Case {N}N, Trial {trial}, Iter {it}: {best_fit:.4f}")
         total_time = (time.time() - start_time)/60
         
-        folder_name = f'data/case_{N}/TLBO'
-        file_name = f'TLBO_{trial}.mat'
+        folder_name = f'data/case_{N}/FDA'
+        file_name = f'FDA_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
         del i, ind, ind_cost, it, best_neighbor, best_neighbor_cost, beta, Delta_g, f, fi, fr, r

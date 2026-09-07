@@ -170,8 +170,8 @@ for N in N_set:
         total_time = (time.time() - start_time)/60
         
         print (f"runtime: {total_time:.4f}min")
-        folder_name = f'data/case_{N}/TLBO'
-        file_name = f'TLBO_{trial}.mat'
+        folder_name = f'data/case_{N}/PDO'
+        file_name = f'PDO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
         del CBest, CPD, current_best, current_fit, DS, e, f, fi, D, i, ind, ind_cost,it, j, levy_route, levy_wait, PE, q, r
