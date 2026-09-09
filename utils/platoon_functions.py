@@ -109,7 +109,7 @@ def build_segment_index(vehicles):
 
                 "vehicle": vehicle_id,
 
-                "node_idx": k,
+                "route_idx": k,
 
                 "departure": departures[k],
 
@@ -157,17 +157,17 @@ def build_platoons(vehicles, segment_index, priority_rank):
 
                 rec = group[0]
 
-                platoon_info[(rec["vehicle"], rec["node_idx"])] = {
+                platoon_info[(rec["vehicle"], rec["route_idx"])] = {
                     "size": 1,
                     "position": 0
                 }
                 continue
 
             # Priority ranking
-            node_idx = group[0]["node_idx"]
+            route_idx = group[0]["route_idx"]
             
             group.sort(
-                key=lambda x: priority_rank[node_idx][x["vehicle"]]
+                key=lambda x: priority_rank[route_idx][x["vehicle"]]
             )
 
             # Save platoon info
@@ -175,7 +175,7 @@ def build_platoons(vehicles, segment_index, priority_rank):
 
             for pos, rec in enumerate(group):
 
-                platoon_info[(rec["vehicle"], rec["node_idx"])] = {
+                platoon_info[(rec["vehicle"], rec["route_idx"])] = {
                     "size": size,
                     "position": pos
                 }

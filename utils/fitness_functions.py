@@ -37,9 +37,10 @@ def plat_fitness(vehicles, platoon_info):
                 pos = 0
 
             fuel = distance * vel * FCF[pos] * gas_price
+            ori_fuel = distance * vel * FCF[0] * gas_price
 
             fuel_cost += fuel
-            cost_matrix[vid] += fuel
+            cost_matrix[vid] += (ori_fuel-fuel)
 
         # ------------------------------------------
         # Waiting
@@ -48,7 +49,7 @@ def plat_fitness(vehicles, platoon_info):
         wait = np.sum(veh["wait"]) * wait_price
 
         wait_cost += wait
-        cost_matrix[vid] += wait
+        cost_matrix[vid] -= wait_cost
 
     return fuel_cost, wait_cost, cost_matrix
 
@@ -111,8 +112,8 @@ def weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
     platoon_info = build_platoons(vehicles, segment_index, priority_rank)
     fuel_cost, wait_cost, cost_matrix = plat_fitness(vehicles, platoon_info)
     
-    mean = np.mean(cost_matrix)
+    # mean = np.mean(cost_matrix)
     std = np.std(cost_matrix, ddof=1)      # sample standard deviation
-    percent_error = std / mean
-    return (1 * fuel_cost + 1 * wait_cost) / (1-percent_error)
+    # percent_error = std / mean
+    return (1 * fuel_cost + 1 * wait_cost) + std
 

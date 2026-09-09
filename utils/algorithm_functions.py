@@ -1,6 +1,7 @@
 from utils.fitness_functions import weighted_fitness
 import random
 import numpy as np
+from math import gamma, pi
 
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary):
@@ -18,6 +19,40 @@ def init_individual(N, route_options, N_trans, max_wait):
         "wait": wait,
         "prior": prior
     }
+
+# PSO INIT
+def PSO_init_individual(N, route_options, N_trans, max_wait):
+    
+    route = np.random.randint(0, route_options, size=N)
+    wait = np.random.randint(1, max_wait + 1, size=(N_trans - 1, N))
+    prior = np.array([np.random.permutation(N) for _ in range(N_trans - 1)])
+        
+    return {
+        "route": route,
+        "wait": wait,
+        "prior": prior,
+        "v_route": np.random.uniform(-1,1, size=(N)),
+        "v_wait": np.random.uniform(-1,1, size=(N_trans - 1, N))
+    }
+
+def Levy(x, y):
+    beta = 1.5
+    sigma = (
+        gamma(1 + beta)
+        * np.sin(pi * beta / 2)
+        / (
+            gamma((1 + beta) / 2)
+            * beta
+            * 2 ** ((beta - 1) / 2)
+        )
+    ) ** (1 / beta)
+
+    u = np.random.randn(x, y) * sigma
+    v = np.random.randn(x, y)
+    step = u / (np.abs(v) ** (1 / beta))
+    if x == 1:
+        return step.reshape(y,)
+    return step
 
 # COPY
 def copy_ind(ind):
@@ -92,7 +127,7 @@ def population_mean(pop, route_options, max_wait):
     for key in mean_ind.keys():
         arr = np.array([p[key] for p in pop])
         mean_ind[key] = np.mean(arr, axis=0)
-        # clamp_individual(mean_ind, route_options, max_wait)
+        mean_ind = clamp_individual(mean_ind, route_options, max_wait)
     return mean_ind
 
 # TEACHING PHASE
@@ -121,22 +156,6 @@ def learner_phase(ind1, ind2, fit1, fit2, route_options, max_wait):
     return new_ind
 
 # %% PSO FUNCTIONS
-
-# PSO INIT
-def PSO_init_individual(N, route_options, N_trans, max_wait):
-    
-    route = np.random.randint(0, route_options, size=N)
-    wait = np.random.randint(1, max_wait + 1, size=(N_trans - 1, N))
-    prior = np.array([np.random.permutation(N) for _ in range(N_trans - 1)])
-        
-    return {
-        "route": route,
-        "wait": wait,
-        "prior": prior,
-        "v_route": np.random.uniform(-1,1, size=(N)),
-        "v_wait": np.random.uniform(-1,1, size=(N_trans - 1, N))
-    }
-
 # PSO UPDATE PARTICLE
 def update_particle(ind, pbest, gbest, W, C1, C2, route_options, max_wait):
     N = len(ind['route'])
@@ -165,5 +184,44 @@ def update_particle(ind, pbest, gbest, W, C1, C2, route_options, max_wait):
     new_ind = clamp_individual(new_ind, route_options, max_wait)
     return new_ind
     
+# %% FDA FUNCTIONS
+def generate_and_select_best_neighbor(ind, Delta, beta, init, ARRIVAL_TIMES, route_options, N_trans, max_wait, RouteLibrary):
+    """
+    Generate beta neighbors and select the best valid one.
     
+    Parameters:
+        ind: current solution
+        Delta: perturbation matrix
+        beta: number of neighbors to generate
+
+    Returns:
+        best_neighbor: best valid neighbor found, or None if no valid neighbor
+        best_cost: cost of best neighbor, or float('inf') if no valid neighbor
+    """
+    best_neighbor = None
+    best_cost = float('inf')
+    N = len(ind['route'])
+    for j in range(beta):
+        # Generate candidate neighbor using perturbation
+        new_ind = ind.copy()
+        new_ind["route"] = ind["route"] + np.random.randint(0, route_options, size=N) * Delta["route"]
+        new_ind["wait"] = ind["wait"] + np.random.randint(1, max_wait + 1, size=(N_trans - 1, N)) * Delta["wait"]
+        
+        new_ind = clamp_individual(new_ind, route_options, max_wait)
+        
+        # Check connectivity and evaluate
+        new_ind_cost = fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary)
+        
+        # Track best valid neighbor
+        if new_ind_cost < best_cost:
+            best_cost = new_ind_cost
+            best_neighbor = new_ind.copy()
+    
+    return best_neighbor, best_cost
+
+
+
+
+
+
     
