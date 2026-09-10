@@ -116,7 +116,7 @@ for N in N_set:
             print(f"Case {N}N, Trial {trial}, Iter {it}: {fitness(best, init, ARRIVAL_TIMES, N_trans, RouteLibrary):.3f}")
         total_time = (time.time() - start_loop)/60
         
-        folder_name = f'data/case_{N}/GA'
+        folder_name = f'data/{region}/case_{N}/GA'
         file_name = f'GA_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         

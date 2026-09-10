@@ -170,7 +170,7 @@ for N in N_set:
         total_time = (time.time() - start_time)/60
         
         print (f"runtime: {total_time:.4f}min")
-        folder_name = f'data/case_{N}/PDO'
+        folder_name = f'data/{region}/case_{N}/PDO'
         file_name = f'PDO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
