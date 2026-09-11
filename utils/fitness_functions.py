@@ -4,11 +4,11 @@ import numpy as np
 # ======================
 # FITNESS
 # ======================
+# fuel cost factors at avg 80km/h (unit: g/km)
+FCF = np.array([266.756436,	249.525877,	249.556977,	249.596089,	249.660813,	249.675374,	249.822444,	249.929398]) 
+# vel = 80 # (km/h)
 
-FCF = np.array([240.525, 223.207, 214.926, 209.575, 206.678]) # fuel cost factors (g/km)
-vel = 60 # (km/h)
-
-gas_price = 1.1144/750 #($/L : g/L)
+gas_price = 1.1144/750 # ($/L : g/L)
 wait_price = 2  # $/hour
 
 # %% separate fitness
@@ -36,8 +36,8 @@ def plat_fitness(vehicles, platoon_info):
             if pos >= len(FCF):
                 pos = 0
 
-            fuel = distance * vel * FCF[pos] * gas_price
-            ori_fuel = distance * vel * FCF[0] * gas_price
+            fuel = distance * FCF[pos] * gas_price
+            ori_fuel = distance * FCF[0] * gas_price
 
             fuel_cost += fuel
             cost_matrix[vid] += (ori_fuel-fuel)
@@ -78,7 +78,7 @@ def ori_fitness(vehicles, platoon_info):
             if pos >= len(FCF):
                 pos = 0
 
-            fuel = distance * vel * FCF[pos] * gas_price
+            fuel = distance * FCF[pos] * gas_price
 
             fuel_cost += fuel
             cost_matrix[vid] += fuel

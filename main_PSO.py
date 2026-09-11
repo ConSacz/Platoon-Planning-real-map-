@@ -16,8 +16,13 @@ from utils.algorithm_functions import PSO_init_individual, update_particle
 def fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
 
-region_set = ["map Viet Nam","map Europe","map America"]
+# %% MAP GENERATION
 map_ID = 1
+N_set = [60]
+# N_set = [60, 80, 100]
+Trial = 1
+
+region_set = ["map Viet Nam","map Europe","map America"]
 region = region_set[map_ID]
 
 with open(f"map generation/{region}/route_library.pkl","rb") as f: 
@@ -34,15 +39,12 @@ for (origin, destination), routes in RouteLibrary.items():
             N_trans = n_nodes
 
 del destination, n_nodes, origin, route, route_id, routes
-# %%PARAMETERS
-# N_set = [60, 80, 100]
-N_set = [60]
+
+# %% MAIN
 for N in N_set:
-    for trial in range(1):
-        
+    for trial in range(Trial):
         np.random.seed(trial)
-        
-        # N = 100
+
         POP_SIZE = 100
         MaxIt = 250
         W  = 0.7

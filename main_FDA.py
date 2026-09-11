@@ -18,8 +18,12 @@ def fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
 
 # =========================================================
 # %% MAP GENERATION
-region_set = ["map Viet Nam","map Europe","map America"]
 map_ID = 1
+N_set = [60]
+# N_set = [60, 80, 100]
+Trial = 1
+
+region_set = ["map Viet Nam","map Europe","map America"]
 region = region_set[map_ID]
 
 with open(f"map generation/{region}/route_library.pkl","rb") as f: 
@@ -40,10 +44,8 @@ del destination, n_nodes, origin, route, route_id, routes
 
 
 # %% MAIN
-# N_set = [60, 80, 100]
-N_set = [60]
 for N in N_set:
-    for trial in range(1):
+    for trial in range(Trial):
         # %%PARAMETERS
         np.random.seed(trial)
         
