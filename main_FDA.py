@@ -6,22 +6,21 @@
 # %%
 import numpy as np
 import time
+import pickle
 
 from utils.fitness_functions import weighted_fitness
 from utils.workspace_functions import save_mat, load_locations
 from utils.algorithm_functions import init_individual, copy_ind, clamp_individual, generate_and_select_best_neighbor
-import pickle
 
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
 
-# =========================================================
 # %% MAP GENERATION
 map_ID = 1
-N_set = [60]
+N_set = [1000]
 # N_set = [60, 80, 100]
-Trial = 1
+Trial = 50
 
 region_set = ["map Viet Nam","map Europe","map America"]
 region = region_set[map_ID]
@@ -54,8 +53,6 @@ for N in N_set:
         MaxIt = 250
         beta = 8 # number of neighbors
         
-        TIME_WINDOW = (0, 48)
-        ARRIVAL_TIMES = np.random.randint(0, 6, N)
         max_wait = 4
         
         locations = load_locations(map_ID)
@@ -72,6 +69,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])

@@ -3,28 +3,24 @@
 #     get_ipython().run_line_magic('reset', '-f')
 # except:
 #     pass
-
 # %%
 import numpy as np
 import time
+import pickle
 from math import pi
-
 from utils.fitness_functions import weighted_fitness
 from utils.workspace_functions import save_mat, load_locations
 from utils.algorithm_functions import init_individual, copy_ind, population_mean, Levy, clamp_individual
-import pickle
 
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
     return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
 
-
-# =========================================================
 # %% MAP GENERATION
 map_ID = 1
-N_set = [60]
+N_set = [1000]
 # N_set = [60, 80, 100]
-Trial = 1
+Trial = 50
 
 region_set = ["map Viet Nam","map Europe","map America"]
 region = region_set[map_ID]
@@ -48,7 +44,6 @@ del destination, n_nodes, origin, route, route_id, routes
 # %% MAIN
 for N in N_set:
     for trial in range(Trial):
-        
         np.random.seed(trial)
         # ALGORITHM PARAMETERS
         POP_SIZE = 100
@@ -57,8 +52,6 @@ for N in N_set:
         delta = 0.1
         
         # PROBLEM PARAMETERS
-        TIME_WINDOW = (0, 48)
-        ARRIVAL_TIMES = np.random.randint(0, 6, N)
         max_wait = 4
         
         locations = load_locations(map_ID)
@@ -75,6 +68,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -115,7 +109,7 @@ for N in N_set:
             phi = -omega * to + phi0
             x = r * np.sin(phi)
             y = r * np.cos(phi)
-            QF = it ** ((2 * np.random.rand() - 1) / (1 - MaxIt) ** 2)
+            QF = it ** (abs(2 * np.random.rand() - 1) / (1 - MaxIt) ** 2)
      
             mean_ind = population_mean(pop, route_options, max_wait)
         
