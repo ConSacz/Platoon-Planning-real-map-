@@ -97,7 +97,7 @@ for N in N_set:
             # ---- crossover + mutation ----
             next_pop = []
             for i in range(0, POP_SIZE):
-                k = np.random.randint(0,N-1)
+                k = np.random.randint(0,POP_SIZE-1)
                 p1, p2 = pop[i], pop[k]
                 c1, c2 = crossover(p1, p2)
                 next_pop.append(mutate(c1, route_options, N_trans, max_wait))
