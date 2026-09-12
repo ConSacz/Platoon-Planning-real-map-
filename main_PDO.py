@@ -44,10 +44,8 @@ del destination, n_nodes, origin, route, route_id, routes
 # %% MAIN
 for N in N_set:
     for trial in range(Trial):
-        
         np.random.seed(trial)
         
-        # N = 100
         POP_SIZE = 100
         MaxIt = 250
         
@@ -71,7 +69,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
-        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))/2), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -99,7 +97,7 @@ for N in N_set:
         print(f"Case {N}N, Trial {trial}, Iter 0: {best_fit:.4f}")
         # %% TLBO LOOP
         start_time = time.time()
-        for it in range(MaxIt):
+        for it in range(1,MaxIt+1):
             mean_ind = population_mean(pop, route_options, max_wait)
             # PDO parameters
             # r alternates between -1 and +1
@@ -168,8 +166,8 @@ for N in N_set:
             BestCostIt[it] = best_fit
             print(f"Case {N}N, Trial {trial}, Iter {it}: {best_fit:.4f}")
         total_time = (time.time() - start_time)/60
-        
         print (f"runtime: {total_time:.4f}min")
+        
         folder_name = f'data/{region}/case_{N}/PDO'
         file_name = f'PDO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)

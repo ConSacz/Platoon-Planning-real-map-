@@ -71,7 +71,8 @@ def load_mat(folder_name, file_name):
     
     # Trích xuất các biến cần thiết
     ARRIVAL_TIMES = data['ARRIVAL_TIME']
-    init = data['init']
+    init = np.asarray(data['init']).astype(str)
+    init = np.char.strip(init)
     pop = data['pop']
     pop_dicts = [matlab_struct_to_dict(item) for item in pop]
     BestCostIt = data['BestCostIt']

@@ -68,7 +68,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
-        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))/2), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -97,7 +97,7 @@ for N in N_set:
         
         # %% TLBO LOOP
         start_time = time.time()
-        for it in range(MaxIt):
+        for it in range(1,MaxIt+1):
             G2 = 2 * np.random.rand() - 1
             G1 = 2 * (1 - (it / MaxIt))
             to = np.arange(1, N + 1)
@@ -182,10 +182,11 @@ for N in N_set:
             BestCostIt[it] = best_fit
             print(f"Case {N}N, Trial {trial}, Iter {it}: {best_fit:.4f}")
         total_time = (time.time() - start_time)/60
+        print (f"runtime: {total_time:.4f}min")
         
         folder_name = f'data/{region}/case_{N}/AO'
         file_name = f'AO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
-        del MaxIt, levy_route, levy_wait, mean_ind, omega, phi, phi0, pi, QF, r, r0, start_time, x, y
-        del alpha, delta, f, fi, G1, G2, i, ind, ind_cost, j, to, u, current_best, current_fit, it
+        # del MaxIt, levy_route, levy_wait, mean_ind, omega, phi, phi0, QF, r, r0, start_time, x, y
+        # del alpha, delta, f, fi, G1, G2, i, ind, ind_cost, j, to, u, current_best, current_fit, it

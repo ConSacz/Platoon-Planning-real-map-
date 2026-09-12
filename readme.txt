@@ -7,14 +7,14 @@ Path-planning and Scheduling optimization using GA, PSO, TLBO, AO, PDO, FDA
 
 
 -Problem: 
-+ N trucks (15 tons, 60km/h average velocity) arrives at start nodes in random time windows, assigned to travel to destination nodes.
++ N trucks (15 tons, 80km/h average velocity) arrives at start nodes in random time windows, assigned to travel to destination nodes.
 + Trucks can decide to depart right after arrive, or wait for other to form platoon, platoon order depends on priority index
-+ When arrive transit hubs trucks can wait for other to form platoon, platoon order depends on priority index
++ When arrive transit hubs, trucks can wait for other to form platoon, platoon order depends on priority index
 
 -Optimization variable (of a population of N trucks): (truck routes, wait time, priority rank)
-+ truck routes: vector (N,)
-+ wait time: matrix (N_trans-1, N) (N_trans is the maximum number of transit nodes in available routes)
-+ priority rank: permutation of (N_trans-1)
++ truck routes: vector (N,), value: int, range: [0, route_options]
++ wait time: matrix (N_trans-1, N) (N_trans is the maximum number of transit nodes in available routes), value: int, range: [1, max_wait]
++ priority rank: matrix (N_trans-1, N), value: permutation of (N_trans-1)
 
 -Fitness functions: 
 + total fuel cost(dollar): depends on distance travel, forming platoon and order in platoon

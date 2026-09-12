@@ -31,6 +31,7 @@ with open(f"map generation/{region}/route_library.pkl","rb") as f:
 print(f"simulation on {region}")
 
 route_options = len(next(iter(RouteLibrary.values())))
+
 N_trans = 0
 for (origin, destination), routes in RouteLibrary.items():
     for route_id, route in routes.items():
@@ -67,7 +68,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
-        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))/2), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -102,7 +103,7 @@ for N in N_set:
         print(f"Case {N}N, Trial {trial}, Iter 0: {fitness(gbest, init, ARRIVAL_TIMES, N_trans, RouteLibrary):.4f}")
         # %% PSO LOOP
         start_loop = time.time()
-        for it in range(MaxIt):
+        for it in range(1,MaxIt+1):
         
             for idx, ind in enumerate(pop):
                 ind = update_particle(ind, pbest[idx], gbest, W, C1, C2, route_options, max_wait)
@@ -134,10 +135,11 @@ for N in N_set:
             
             print(f"Case {N}N, Trial {trial}, Iter {it}: {fitness(gbest, init, ARRIVAL_TIMES, N_trans, RouteLibrary):.3f}")
         total_time = (time.time() - start_loop)/60
+        print (f"runtime: {total_time:.4f}min")
         
         folder_name = f'data/{region}/case_{N}/PSO'
         file_name = f'PSO_{trial}.mat'
-        save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, ind, BestCostIt, gbest, total_time)
+        save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, gbest, total_time)
         
-        del C1, C2, candidate, current_fit, idx, it, MaxIt, ind, pbest, pbest_fit
-        del start_loop, POP_SIZE, TIME_WINDOW, W
+        # del C1, C2, candidate, current_fit, idx, it, MaxIt, ind, pbest, pbest_fit
+        # del start_loop, POP_SIZE, TIME_WINDOW, W

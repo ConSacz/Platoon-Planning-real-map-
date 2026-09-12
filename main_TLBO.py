@@ -41,6 +41,7 @@ for (origin, destination), routes in RouteLibrary.items():
 
 del destination, n_nodes, origin, route, route_id, routes
 
+# %% MAIN
 for N in N_set:
     for trial in range(Trial):
         np.random.seed(trial)
@@ -64,7 +65,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
-        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))/2), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -92,43 +93,34 @@ for N in N_set:
         print(f"Case {N}N, Trial {trial}, Iter 0: {best_fit:.4f}")
         # %% TLBO LOOP
         start_time = time.time()
-        for it in range(MaxIt):
+        for it in range(1,MaxIt+1):
             # TEACHER
-            teacher = min(
-                pop,
-                key=lambda ind:
-                fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-            )
+            teacher = copy_ind(best)
         
             mean_ind = population_mean(pop, route_options, max_wait)
         
             # TEACHING PHASE
             for i in range(POP_SIZE):
-        
                 new_ind = teaching_phase(pop[i], teacher, mean_ind, route_options, max_wait)
-        
                 fit_old = fitness(pop[i], init, ARRIVAL_TIMES, N_trans, RouteLibrary)
                 fit_new = fitness(new_ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
         
                 if fit_new < fit_old:
                     pop[i] = new_ind
+                    fit_old = fit_new
         
             # LEARNER PHASE
-            for i in range(POP_SIZE):
-        
                 j = np.random.randint(0, POP_SIZE-1)
-        
                 while j == i:
                     j = np.random.randint(0, POP_SIZE-1)
         
-                fit_i = fitness(pop[i], init, ARRIVAL_TIMES, N_trans, RouteLibrary)
                 fit_j = fitness(pop[j], init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-        
-                new_ind = learner_phase(pop[i], pop[j], fit_i, fit_j, route_options, max_wait)
+                new_ind = learner_phase(pop[i], pop[j], fit_old, fit_j, route_options, max_wait)
                 fit_new = fitness(new_ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
         
-                if fit_new < fit_i:
+                if fit_new < fit_old:
                     pop[i] = new_ind
+                    fit_old = fit_new
             
             # GLOBAL BEST
             current_best = min(
@@ -145,10 +137,11 @@ for N in N_set:
             BestCostIt[it] = best_fit
             print(f"Case {N}N, Trial {trial}, Iter {it}: {best_fit:.4f}")
         total_time = (time.time() - start_time)/60
+        print (f"runtime: {total_time:.4f}min")
         
         folder_name = f'data/{region}/case_{N}/TLBO'
         file_name = f'TLBO_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
-        del current_best, current_fit, it, fit_i, fit_j, fit_new, fit_old, i, j, new_ind
-        del MaxIt, mean_ind, POP_SIZE, start_time, teacher
+        # del current_best, current_fit, it, fit_i, fit_j, fit_new, fit_old, i, j, new_ind
+        # del MaxIt, mean_ind, POP_SIZE, start_time, teacher

@@ -14,7 +14,7 @@ from utils.workspace_functions import save_mat, load_locations
 
 # FITNESS FUNCTION
 def fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary):
-    return weighted_fitness(ind, init, ARRIVAL_TIMES,  N_trans, RouteLibrary)
+    return weighted_fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
 
 # %% MAP GENERATIONS
 map_ID = 1
@@ -65,7 +65,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
-        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))/2), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -93,7 +93,7 @@ for N in N_set:
 
         
         start_loop = time.time()
-        for it in range(MaxIt):
+        for it in range(1,MaxIt+1):
             # ---- crossover + mutation ----
             next_pop = []
             for i in range(0, POP_SIZE):
@@ -116,11 +116,12 @@ for N in N_set:
             del best_fit, next_pop, c1, c2, p1, p2, k, i
             print(f"Case {N}N, Trial {trial}, Iter {it}: {fitness(best, init, ARRIVAL_TIMES, N_trans, RouteLibrary):.3f}")
         total_time = (time.time() - start_loop)/60
+        print (f"runtime: {total_time:.4f}min")
         
         folder_name = f'data/{region}/case_{N}/GA'
         file_name = f'GA_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
-        del it, MaxIt, N_trans, RouteLibrary, POP_SIZE, start_loop, TIME_WINDOW
+        # del it, MaxIt, N_trans, RouteLibrary, POP_SIZE, start_loop, TIME_WINDOW
 # print("Best individual:", best)
 # print("Decoded routes:", decode(best, paths_to_B, paths_to_C, DESTINATIONS))

@@ -41,17 +41,14 @@ for (origin, destination), routes in RouteLibrary.items():
 
 del destination, n_nodes, origin, route, route_id, routes
 
-
 # %% MAIN
 for N in N_set:
     for trial in range(Trial):
-        # %%PARAMETERS
         np.random.seed(trial)
         
-        # N = 100
         POP_SIZE = 100
         MaxIt = 250
-        beta = 8 # number of neighbors
+        beta = 2 # number of neighbors
         
         max_wait = 4
         
@@ -69,7 +66,7 @@ for N in N_set:
         
         origin_idx = np.random.randint(0, len(ORIGINS), N)
         destination_idx = np.random.randint(0, len(DESTINATIONS), N)
-        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))), N)
+        ARRIVAL_TIMES = np.random.randint(0, round(N/(len(ORIGINS)*len(DESTINATIONS))/2), N)
         
         init = [
             (ORIGINS[o], DESTINATIONS[d])
@@ -97,7 +94,7 @@ for N in N_set:
         print(f"Case {N}N, Trial {trial}, Iter 0: {best_fit:.4f}")
         # %% TLBO LOOP
         start_time = time.time()
-        for it in range(MaxIt):
+        for it in range(1,MaxIt+1):
             for i in range(POP_SIZE):
                 r = np.random.randint(POP_SIZE) # flow(r)
                 
@@ -130,13 +127,6 @@ for N in N_set:
                     ind['route'] = xi['route'] + V_route
                     ind['wait'] = xi['wait'] + V_wait
                     ind = clamp_individual(ind, route_options, max_wait)
-        
-                    ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                    if ind_cost <= fi:
-                        pop[i] = copy_ind(ind)
-                        if ind_cost < best_fit:
-                            best = ind
-                            best_fit = ind_cost
                 
                 # %% Neighbor is worse than current flow(i)
                 else:    
@@ -146,13 +136,6 @@ for N in N_set:
                         ind['route'] = xi['route'] + np.random.randn(N) * (xr['route'] - xi['route'])
                         ind['wait'] = xi['wait'] + np.random.randn(N_trans - 1, N) * (xr['wait'] - xi['wait'])
                         ind = clamp_individual(ind, route_options, max_wait)
-                        
-                        ind_cost = fitness(xi, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                        if ind_cost <= fi:
-                            pop[i] = copy_ind(ind)
-                            if ind_cost < best_fit:
-                                best = ind
-                                best_fit = ind_cost
                     
                     # Random flow(r) is worse than flow(i)
                     else:
@@ -161,19 +144,20 @@ for N in N_set:
                         ind['wait'] = xi['wait'] + 2 * np.random.randn(N_trans - 1, N) * (xr['wait'] - xi['wait'])
                         ind = clamp_individual(ind, route_options, max_wait)
                         
-                        ind_cost = fitness(xi, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
-                        if ind_cost <= fi:
-                            pop[i] = copy_ind(ind)
-                            if ind_cost < best_fit:
-                                best = ind
-                                best_fit = ind_cost
+                ind_cost = fitness(ind, init, ARRIVAL_TIMES, N_trans, RouteLibrary)
+                if ind_cost <= fi:
+                    pop[i] = copy_ind(ind)
+                    if ind_cost < best_fit:
+                        best = ind
+                        best_fit = ind_cost
                                 
             print(f"Case {N}N, Trial {trial}, Iter {it}: {best_fit:.4f}")
         total_time = (time.time() - start_time)/60
+        print (f"runtime: {total_time:.4f}min")
         
         folder_name = f'data/{region}/case_{N}/FDA'
         file_name = f'FDA_{trial}.mat'
         save_mat(folder_name, file_name, ARRIVAL_TIMES, init, pop, BestCostIt, best, total_time)
         
-        del i, ind, ind_cost, it, best_neighbor, best_neighbor_cost, beta, Delta_g, f, fi, fr, r
-        del MaxIt, POP_SIZE, start_time, V_route, V_wait, W_global_route, W_global_wait, xi, xr
+        # del i, ind, ind_cost, it, best_neighbor, best_neighbor_cost, beta, Delta_g, f, fi, fr, r
+        # del MaxIt, POP_SIZE, start_time, V_route, V_wait, W_global_route, W_global_wait, xi, xr

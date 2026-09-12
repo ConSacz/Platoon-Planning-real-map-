@@ -132,26 +132,33 @@ def population_mean(pop, route_options, max_wait):
 
 # TEACHING PHASE
 def teaching_phase(student, teacher, mean_ind, route_options, max_wait):
+    N = len(student['route'])
+    N_trans = len(student['wait'])
     TF = np.random.randint(1,2)
     new_ind = copy_ind(student)
-    r = np.random.random()
+    r_route = np.random.rand(N)
+    r_wait = np.random.rand(N_trans, N)
     # route 
-    new_ind["route"] = new_ind["route"].astype(float) + (r * (teacher["route"] - TF * mean_ind["route"]))
+    new_ind["route"] = new_ind["route"].astype(float) + (r_route * (teacher["route"] - TF * mean_ind["route"]))
     # wait
-    new_ind["wait"] = new_ind["wait"].astype(float) + (r * (teacher["wait"] - TF * mean_ind["wait"]))
+    new_ind["wait"] = new_ind["wait"].astype(float) + (r_wait * (teacher["wait"] - TF * mean_ind["wait"]))
+    
     new_ind = clamp_individual(new_ind, route_options, max_wait)
     return new_ind
 
 # LEARNER PHASE
 def learner_phase(ind1, ind2, fit1, fit2, route_options, max_wait):
+    N = len(ind1['route'])
+    N_trans = len(ind1['wait'])
     new_ind = copy_ind(ind1)
-    r = np.random.random()
+    r_route = np.random.rand(N)
+    r_wait = np.random.rand(N_trans, N)
     if fit1 < fit2:
-        new_ind["route"] = new_ind["route"].astype(float) + (r * ( ind1["route"] - ind2["route"]))
-        new_ind["wait"] = new_ind["wait"].astype(float) + (r * (ind1["wait"] - ind2["wait"]))
+        new_ind["route"] = new_ind["route"].astype(float) + (r_route * ( ind1["route"] - ind2["route"]))
+        new_ind["wait"] = new_ind["wait"].astype(float) + (r_wait * (ind1["wait"] - ind2["wait"]))
     else:
-        new_ind["route"] = new_ind["route"].astype(float) + (r * ( ind2["route"] -ind1["route"]))
-        new_ind["wait"] = new_ind["wait"].astype(float) + (r * (ind2["wait"] - ind1["wait"]))
+        new_ind["route"] = new_ind["route"].astype(float) + (r_route * ( ind2["route"] -ind1["route"]))
+        new_ind["wait"] = new_ind["wait"].astype(float) + (r_wait * (ind2["wait"] - ind1["wait"]))
     new_ind =clamp_individual(new_ind, route_options, max_wait)
     return new_ind
 
