@@ -5,7 +5,6 @@ import networkx as nx
 from locations import locations
 
 distance = np.load("data/distance_matrix.npy")
-
 time = np.load("data/travel_time_matrix.npy")
 
 LG = nx.DiGraph()
@@ -17,120 +16,63 @@ LG = nx.DiGraph()
 names = list(locations.keys())
 
 index = {
-
-    name:i
-
-    for i,name in enumerate(names)
-
+    name: i
+    for i, name in enumerate(names)
 }
 
 # --------------------------------------
 # Nodes
 # --------------------------------------
 
-for name,info in locations.items():
+for name, info in locations.items():
 
-    lat,lon = info["coord"]
+    lat, lon = info["coord"]
 
     LG.add_node(
-
         name,
-
         type=info["type"],
-
         latitude=lat,
-
         longitude=lon
-
     )
 
 # --------------------------------------
-# Allowed Edges
+# Automatic Edges
 # --------------------------------------
 
-allowed_edges = [
+MAX_DISTANCE = 1200  # km
 
-    ("Lao Cai IBC","Ha Noi ICD"),
+for i, u in enumerate(names):
 
-    ("Lao Cai IBC","Tien Son ICD"),
-    
-    ("Huu Nghi IBC","Ha Noi ICD"),
+    for j, v in enumerate(names):
 
-    ("Huu Nghi IBC","Tien Son ICD"),
+        # Không nối node với chính nó
+        if i == j:
+            continue
 
-    ("Hai Phong Port","Ha Noi ICD"),
+        d = distance[i, j]
 
-    ("Hai Phong Port","Tien Son ICD"),    
-    
-    ("Ha Noi ICD","Vinh Logistics Center"),
+        # Bỏ qua khoảng cách không hợp lệ
+        if not np.isfinite(d):
+            continue
 
-    ("Ha Noi ICD","Da Nang Port"),
+        # Chỉ giữ edge < 1200 km
+        if d < MAX_DISTANCE:
 
-    ("Tien Son ICD","Vinh Logistics Center"),
-
-    ("Tien Son ICD","Da Nang Port"),
-
-    ("Vinh Logistics Center","Da Nang Port"),
-
-    ("Vinh Logistics Center","Quy Nhon Port"),
-
-    ("Da Nang Port","Quy Nhon Port"),
-    
-    ("Da Nang Port","Song Than ICD"),
-    
-    ("Da Nang Port","Cat Lai Port"),
-
-    ("Quy Nhon Port","Song Than ICD"),
-    
-    ("Quy Nhon Port","Cat Lai Port"),
-
-    ("Song Than ICD","Cai Mep Port"),
-
-    ("Song Than ICD","Hub Can Tho"),
-    
-    ("Song Than ICD","Lao Bao IBC"),
-
-    ("Cat Lai Port","Cai Mep Port"),
-
-    ("Cat Lai Port","Hub Can Tho"),
-    
-    ("Cat Lai Port","Lao Bao IBC"),
-]
-
-# --------------------------------------
-# Add Edges
-# --------------------------------------
-
-for u,v in allowed_edges:
-
-    i = index[u]
-
-    j = index[v]
-
-    LG.add_edge(
-
-        u,
-
-        v,
-
-        distance=distance[i,j],
-
-        travel_time=time[i,j]
-
-    )
+            LG.add_edge(
+                u,
+                v,
+                distance=d,
+                travel_time=time[i, j]
+            )
 
 # --------------------------------------
 # Save
 # --------------------------------------
 
-with open("logistics_graph.pkl","wb") as f:
-
-    pickle.dump(LG,f)
+with open("logistics_graph.pkl", "wb") as f:
+    pickle.dump(LG, f)
 
 print()
-
 print("Logistics graph created.")
-
-print("Nodes :",LG.number_of_nodes())
-
-print("Edges :",LG.number_of_edges())
+print("Nodes :", LG.number_of_nodes())
+print("Edges :", LG.number_of_edges())

@@ -1,107 +1,89 @@
+from locations import locations
 import route_manager as RM
-
+import networkx as nx
+import itertools
+import pickle
 # ==========================================================
 # Load logistics graph
 # ==========================================================
-
+with open("logistics_graph.pkl","rb") as f: 
+    G = pickle.load(f)
+    
 RM.load_graph()
 
-# ==========================================================
-# Route templates
-# ==========================================================
-
-ROUTE_TEMPLATES = {
-
-    0: {
-        "hubs": [
-            "Da Nang Port"
-        ]
-    },
-
-    1: {
-        "hubs": [
-            "Vinh Logistics Center",
-            "Da Nang Port"
-        ]
-    },
-
-    2: {
-        "hubs": [
-            "Da Nang Port",
-            "Quy Nhon Port"
-        ]
-    },
-
-    3: {
-        "hubs": [
-            "Vinh Logistics Center",
-            "Quy Nhon Port"
-        ]
-    },
-
-    4: {
-        "hubs": [
-            "Vinh Logistics Center",
-            "Da Nang Port",
-            "Quy Nhon Port"
-        ]
-    }
-
-}
 
 # ==========================================================
-# Origins
+# Parameters
+# ==========================================================
+
+K = 8
+
+# ==========================================================
+# Origins - DESTINATIONS
 # ==========================================================
 
 ORIGINS = [
-    "Huu Nghi IBC",
-    "Hai Phong Port",
-    "Lao Cai IBC"
+    name for name, info in locations.items()
+    if info["type"] == "start"
 ]
-
-ORIGINS_HUB = [
-    "Ha Noi ICD",
-    "Tien Son ICD"
-] 
-
-# ==========================================================
-# Destinations
-# ==========================================================
 
 DESTINATIONS = [
-    "Hub Can Tho",
-    "Lao Bao IBC",
-    "Cai Mep Port"
+    name for name, info in locations.items()
+    if info["type"] == "destination"
 ]
 
-DESTINATIONS_HUB = [
-    "Song Than ICD",
-    "Cat Lai Port"
-] 
+# ==========================================================
+# K Shortest Paths
+# ==========================================================
+
+def get_k_shortest_paths(G, source, target, k=8):
+    try:
+        paths = nx.shortest_simple_paths(
+            G,
+            source,
+            target,
+            weight="distance"
+        )
+
+        return list(itertools.islice(paths, k))
+
+    except nx.NetworkXNoPath:
+
+        return []
+
 
 # ==========================================================
 # Build Route Library
 # ==========================================================
 
+total_routes = 0
+
 for origin in ORIGINS:
+
     for destination in DESTINATIONS:
-        
-        for ido, origin_hub in enumerate(ORIGINS_HUB):
-            for idd, destination_hub in enumerate(DESTINATIONS_HUB):
-                
-                for route_template_id, route in ROUTE_TEMPLATES.items():
-        
-                    path = [origin] + [origin_hub] + route["hubs"] + [destination_hub] + [destination]
-                    
-                    route_id = (ido * len(DESTINATIONS_HUB) + idd) * len(ROUTE_TEMPLATES) + route_template_id
-                    
-                    RM.register(
-                        origin=origin,
-                        destination=destination,
-                        route_id=route_id, 
-                        path=path
-                    )
+
+        paths = get_k_shortest_paths(
+            G,
+            origin,
+            destination,
+            K
+        )
+
+        for route_id, path in enumerate(paths):
+
+            RM.register(
+                origin=origin,
+                destination=destination,
+                route_id=route_id,
+                path=path
+            )
+            total_routes+=1
+
+
+# ==========================================================
+# Save
+# ==========================================================
 
 RM.save_routes()
 
-print(f"Generated {len(ORIGINS)*len(DESTINATIONS)*len(ROUTE_TEMPLATES)} routes.")
+print(f"Generated {total_routes} routes.")
